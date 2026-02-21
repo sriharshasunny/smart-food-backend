@@ -12,10 +12,6 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import { API_URL } from '../config';  // Import Config
 
 const Home = () => {
-    const { addToCart } = useShop();
-    const navigate = useNavigate();
-
-    // Data State
     const { addToCart, searchQuery, setSearchQuery } = useShop(); // Use Global Search
     const navigate = useNavigate();
 
