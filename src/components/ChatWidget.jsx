@@ -131,7 +131,7 @@ const ChatWidget = () => {
                         </div>
                     )}
                     {foods.length === 0 ? (
-                        <p>No food items found matching your criteria.</p>
+                        !msg.message && <p>No food items found matching your criteria.</p>
                     ) : (
                         <div className="flex flex-col gap-3 mt-1 w-full">
                             <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Top Picks For You</p>
@@ -189,7 +189,7 @@ const ChatWidget = () => {
                         </div>
                     )}
                     {restaurants.length === 0 ? (
-                        <p>No restaurants found.</p>
+                        !msg.message && <p>No restaurants found.</p>
                     ) : (
                         <div className="flex flex-col gap-3 mt-1 w-full">
                             <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Restaurants Nearby</p>
@@ -236,7 +236,7 @@ const ChatWidget = () => {
                         </div>
                     )}
                     {(!Array.isArray(orders) || orders.length === 0) ? (
-                        <p>No recent orders found.</p>
+                        !msg.message && <p>No recent orders found.</p>
                     ) : (
                         <div className="flex flex-col gap-3 mt-1 w-full">
                             <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Recent Orders</p>
