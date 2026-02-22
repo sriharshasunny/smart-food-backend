@@ -30,11 +30,11 @@ exports.processChatRequest = async (req, res) => {
 
         // 1. Construct the Prompt (The "Brain")
         const prompt = `
-            You are "SmartBot", the official AI assistant for Smart Food Delivery.
+            You are "SmartBot", a highly professional, polite, and helpful AI assistant for Smart Food Delivery.
             
             SYSTEM INFORMATION (Your Knowledge Base):
             - **Name:** Smart Food Delivery
-            - **Service:** We deliver food from top local restaurants to students and locals.
+            - **Service:** We deliver delicious food from top local restaurants to students and locals.
             - **Hours:** We operate 24/7.
             - **Delivery Time:** Usually 30-45 minutes.
             - **Refund Policy:** No refunds once food is prepared. Contact support for issues.
@@ -63,10 +63,10 @@ exports.processChatRequest = async (req, res) => {
             - general_info (User asks general questions like "who are you", "delivery time", "how to order")
 
             For search_food intent, extract these possible filters:
-            - food_name (string or null)
+            - food_name (string or null): MUST be a generic food type or name (e.g., "burger", "pizza", "biryani", "chicken", "paneer"). Do NOT include adjectives like "spicy", "delicious", "hot" or "best". If the user only says adjectives without a specific food noun, leave this as null.
             - price_max (number or null)
             - price_min (number or null)
-            - veg (true/false/null)
+            - veg (true/false/null): Set to true ONLY if user explicitly says "veg" or "vegetarian". Set to false ONLY if user explicitly says "non-veg", "chicken", "mutton", "meat". Otherwise null.
             - location (string or null)
             - rating_min (number or null)
             - open_now (true/false/null)
@@ -84,14 +84,14 @@ exports.processChatRequest = async (req, res) => {
              - message (string): The answer to the user's question based on the SYSTEM INFORMATION above.
 
             Rules:
-            - If a value is not present, return null.
-            - price_max should be extracted from phrases like "under 200", "below 300".
+            - Professionalism: Your responses must be warm, grammatically perfect, and exceptionally helpful, matching the tone of a premium culinary service. Always be eager to assist.
+            - If a value is not present or cannot be determined reliably, you MUST return null.
+            - price_max should be extracted from phrases like "under 200", "below 300", "cheaper than 150".
             - price_min should be extracted from phrases like "above 100", "more than 150".
-            - veg should be true if user says "veg", false if "non-veg".
-            - rating_min from phrases like "above 4 rating".
+            - rating_min from phrases like "above 4 rating", "highly rated".
             - open_now true if user says "open now" or "late night".
             - If user asks about "order status" or "where is my food", intent is 'get_orders'.
-            - Pay attention to CONVERSATION CONTEXT to understand follow-up questions (e.g., if user said "burgers" in previous message, and now says "any veg ones", they mean veg burgers).
+            - Pay attention to CONVERSATION CONTEXT to understand follow-up questions. If a user previously asked for burgers and now asks for "spicy ones", you should infer they mean spicy burgers and keep the food_name as "burger".
 
             Return strictly this JSON format EVERY TIME:
             {
@@ -185,7 +185,8 @@ async function searchFood(filters) {
     let query = supabase.from('foods').select('*, restaurant:restaurants(*)');
 
     if (filters.food_name) {
-        query = query.ilike('name', `%${filters.food_name}%`);
+        // Use an OR query to match name, category, or description securely
+        query = query.or(`name.ilike.%${filters.food_name}%,category.ilike.%${filters.food_name}%,description.ilike.%${filters.food_name}%`);
     }
     if (filters.price_max) {
         query = query.lte('price', filters.price_max);
@@ -193,7 +194,7 @@ async function searchFood(filters) {
     if (filters.price_min) {
         query = query.gte('price', filters.price_min);
     }
-    if (filters.veg !== null) {
+    if (typeof filters.veg === 'boolean') { // Safer check
         query = query.eq('is_veg', filters.veg);
     }
     if (filters.rating_min) {

@@ -37,9 +37,20 @@ const ChatWidget = () => {
     const navigate = useNavigate();
 
     const [isOpen, setIsOpen] = useState(false);
-    const [messages, setMessages] = useState([
-        { type: 'text', content: "Hi! I'm SmartBot. How can I help you discover delicious food today?", sender: 'ai', timestamp: new Date() }
-    ]);
+    const [messages, setMessages] = useState(() => {
+        const saved = localStorage.getItem('smartbot_chat_history');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                return parsed.map(m => ({ ...m, timestamp: new Date(m.timestamp) }));
+            } catch (e) {
+                console.error("Failed to parse chat history", e);
+            }
+        }
+        return [
+            { type: 'text', content: "Hi! I'm SmartBot. How can I help you discover delicious food today?", sender: 'ai', timestamp: new Date() }
+        ];
+    });
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef(null);
@@ -58,6 +69,13 @@ const ChatWidget = () => {
         }
     }, [messages, isOpen]);
 
+    // Persist messages to Local Storage
+    useEffect(() => {
+        // Keep last 30 messages to prevent quota limit issues
+        const messagesToSave = messages.slice(-30);
+        localStorage.setItem('smartbot_chat_history', JSON.stringify(messagesToSave));
+    }, [messages]);
+
     const handleSend = async () => {
         if (!input.trim()) return;
 
@@ -68,10 +86,18 @@ const ChatWidget = () => {
 
         try {
             const userId = user?.id || null;
-            const history = messages.slice(-6).map(m => ({
-                sender: m.sender,
-                content: m.content || m.message || ''
-            }));
+            const history = messages.slice(-6).map(m => {
+                let contextContent = m.content || m.message || '';
+                // Inject the names of the items shown so AI has context of what it suggested
+                if (m.data && Array.isArray(m.data) && m.data.length > 0) {
+                    const itemNames = m.data.map(item => item.name).join(', ');
+                    contextContent += ` [System Note: I displayed these items to the user: ${itemNames}]`;
+                }
+                return {
+                    sender: m.sender,
+                    content: contextContent
+                };
+            });
 
             const res = await fetch(`${API_URL}/api/chat`, {
                 method: 'POST',
