@@ -119,33 +119,12 @@ const LandingPage = () => {
             speed: 50 + Math.random() * 80 // MUCHO FASTER
         }));
 
-        // Entities: Shooting Stars (More Frequent)
+        // Entities: Shooting Stars (REMOVED FOR LOW VRAM)
         let shootingStars = [];
-        const spawnShootingStar = () => {
-            // Reduced spawn rate on mobile
-            if (Math.random() < (isMobile ? 0.005 : 0.015)) {
-                shootingStars.push({
-                    x: Math.random() * width,
-                    y: Math.random() * (height * 0.5),
-                    vx: -200 - Math.random() * 200, // Faster
-                    vy: 50 + Math.random() * 80,
-                    life: 1.0,
-                    length: 80 + Math.random() * 60
-                });
-            }
-        };
+        const spawnShootingStar = () => { };
 
-        // Entities: Nebula Clouds (Removed for Performance)
-        const nebulas = [];
-
-        // Entities: Space Dust (High Density for "Texture")
-        const dustCount = isMobile ? 8 : 25;
-        const dust = Array.from({ length: dustCount }, () => ({
-            x: Math.random() * 2000,
-            y: Math.random() * 1000,
-            size: Math.random() * 1.2 + 0.2,
-            depth: Math.random() * 3 + 1 // More depth layers
-        }));
+        // Entities: Space Dust (REMOVED FOR LOW VRAM)
+        const dust = [];
 
         // Entities: Orbiting Food (Satellites)
         // 3 items orbiting tightly
@@ -157,40 +136,10 @@ const LandingPage = () => {
             size: 30
         }));
 
-        // Entities: Food Meteorites
-        // Desktop Only: Top-to-Bottom Fall
+        // Entities: Food Meteorites (REMOVED FOR LOW VRAM)
         let foodMeteorites = [];
         let meteoriteTimer = 0;
-        const spawnMeteorite = () => {
-            if (isMobile) return; // Disable on Mobile
-
-            // Spawn 1 item at a time
-            const count = 1;
-            for (let i = 0; i < count; i++) {
-                // Start at Top
-                const startX = Math.random() * width;
-                const startY = -60;
-
-                // End at Bottom (with some variance)
-                const endX = startX + (Math.random() - 0.5) * 400; // Slight angle
-                const endY = height + 60;
-
-                const angle = Math.atan2(endY - startY, endX - startX);
-                const speed = 200 + Math.random() * 100; // Fast fall
-
-                foodMeteorites.push({
-                    x: startX,
-                    y: startY,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    emoji: FOOD_EMOJIS[Math.floor(Math.random() * FOOD_EMOJIS.length)],
-                    rot: 0,
-                    rotSpeed: (Math.random() - 0.5) * 3,
-                    size: 40 + Math.random() * 20,
-                    trail: []
-                });
-            }
-        };
+        const spawnMeteorite = () => { };
 
         // Entities: Emitted Food (Mobile & Laptop)
         let emittedFoods = [];
@@ -260,30 +209,7 @@ const LandingPage = () => {
                     });
                 }
 
-                // Update Food Meteorites
-                meteoriteTimer += dt;
-                // Realistic Timing: Occasional (every 10-15s)
-                if (meteoriteTimer > 10.0 + Math.random() * 5.0) {
-                    spawnMeteorite();
-                    meteoriteTimer = 0;
-                }
-                for (let i = foodMeteorites.length - 1; i >= 0; i--) {
-                    const m = foodMeteorites[i];
-                    m.x += m.vx * dt;
-                    m.y += m.vy * dt;
-                    m.rot += m.rotSpeed * dt;
-
-                    // Trail
-                    m.trail.push({ x: m.x, y: m.y, life: 0.5 });
-                    for (let j = m.trail.length - 1; j >= 0; j--) {
-                        m.trail[j].life -= dt;
-                        if (m.trail[j].life <= 0) m.trail.splice(j, 1);
-                    }
-
-                    if (m.x < -100 || m.x > width + 100 || m.y < -100 || m.y > height + 100) {
-                        foodMeteorites.splice(i, 1);
-                    }
-                }
+                // Food Meteorite Logic REMOVED
 
                 // Update Emitted Food
                 for (let i = emittedFoods.length - 1; i >= 0; i--) {
@@ -407,43 +333,8 @@ const LandingPage = () => {
                 ufo.pos.x += ufo.vel.x * dt * 3.5;
                 ufo.pos.y += ufo.vel.y * dt * 3.5;
 
-                if (ufo.opacity > 0.1 && (Math.abs(ufo.vel.x) > 0.1 || Math.abs(ufo.vel.y) > 0.1)) {
-                    const vLen = Math.hypot(ufo.vel.x, ufo.vel.y) || 1;
-                    const vxNorm = ufo.vel.x / vLen;
-                    const vyNorm = ufo.vel.y / vLen;
-                    const offset = 20 * ufo.scale;
-                    ufo.trail.push({
-                        x: ufo.pos.x - vxNorm * offset,
-                        y: ufo.pos.y - vyNorm * offset,
-                        vx: -vxNorm * 50 + (Math.random() - 0.5) * 20,
-                        vy: -vyNorm * 50 + (Math.random() - 0.5) * 20,
-                        life: 1.0,
-                        size: Math.random() * 6 + 4
-                    });
-                }
-                for (let i = ufo.trail.length - 1; i >= 0; i--) {
-                    const p = ufo.trail[i];
-                    p.life -= 4.0 * dt;
-                    p.x += p.vx * dt;
-                    p.y += p.vy * dt;
-                    p.size *= 0.95;
-                    if (p.life <= 0) ufo.trail.splice(i, 1);
-                }
-
-                spawnShootingStar();
-                for (let i = shootingStars.length - 1; i >= 0; i--) {
-                    const s = shootingStars[i];
-                    s.x += s.vx * dt;
-                    s.y += s.vy * dt;
-                    s.life -= 1.0 * dt;
-                    if (s.life <= 0) shootingStars.splice(i, 1);
-                }
-
-                nebulas.forEach(n => {
-                    n.x += n.vx * dt; n.y += n.vy * dt;
-                    if (n.x < -n.radius) n.x = width + n.radius;
-                    if (n.x > width + n.radius) n.x = -n.radius;
-                });
+                // UFO Trail Logic REMOVED
+                // Shooting Star Logic REMOVED
 
 
                 // 2. DRAW
@@ -483,56 +374,20 @@ const LandingPage = () => {
                             if (Math.hypot(s.x - centerX, s.y - centerY) < 50) s.x += 100;
                         }
                     } else {
-                        // Vertical Scroll (Desktop) with ENHANCED PARALLAX
-                        // Depth factor: Closer stars (high z) move faster with mouse
-                        const parallaxX = mouse.x * 120 * s.z; // Stronger parallax
-                        const parallaxY = mouse.y * 120 * s.z;
-
-                        s.y += s.speed * dt * s.z * 0.5; // Speed based on depth
-
-                        let renderX = s.x + parallaxX;
-                        let renderY = s.y + parallaxY;
-
-                        // Wrap around logic need to use base coordinates
-                        if (s.y > height) { s.y = -50; s.x = Math.random() * width; }
+                        // Draw Static Stars (No Vertical Scroll/Parallax Math)
+                        let renderX = s.x;
+                        let renderY = s.y;
 
                         // Render
-                        const opacity = s.baseOpacity + Math.sin(timestamp * 0.005 + s.phase) * 0.2;
-                        if (opacity > 0.05) {
-                            ctx.globalAlpha = Math.max(0, Math.min(1, opacity));
-                            ctx.beginPath();
-                            // Size also affected by depth even more
-                            const pSize = s.size * s.z * 0.8;
-                            ctx.arc(renderX % width, renderY % height, pSize, 0, Math.PI * 2);
-                            ctx.fill();
-                        }
+                        ctx.globalAlpha = s.baseOpacity;
+                        ctx.beginPath();
+                        ctx.arc(renderX, renderY, s.size, 0, Math.PI * 2);
+                        ctx.fill();
                     }
                 });
                 ctx.globalAlpha = 1;
 
-                // Dust with ENHANCED DEPTH
-                ctx.fillStyle = "rgba(200, 200, 255, 0.4)";
-                dust.forEach(d => {
-                    const px = d.x + (mouse.x * 150 * d.depth); // Increased multiplier
-                    const py = d.y + (mouse.y * 150 * d.depth);
-                    const wx = (px % width + width) % width;
-                    const wy = (py % height + height) % height;
-                    const size = d.size * d.depth; // Scale size by depth
-                    ctx.beginPath(); ctx.arc(wx, wy, size, 0, Math.PI * 2); ctx.fill();
-                });
-
-                // Shooting Stars
-                shootingStars.forEach(s => {
-                    ctx.strokeStyle = `rgba(255, 255, 255, ${s.life})`;
-                    ctx.lineWidth = 2;
-                    ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - s.vx * 0.1, s.y - s.vy * 0.1); ctx.stroke();
-                });
-
-                // UFO Trail
-                ufo.trail.forEach(t => {
-                    ctx.beginPath(); ctx.arc(t.x, t.y, t.size * ufo.scale, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(0, 255, 255, ${t.life * 0.6})`; ctx.fill();
-                });
+                // Draw Passes removed: Dust, Shooting Stars, UFO Trail
 
                 // UFO
                 if (ufo.opacity > 0) {
@@ -614,21 +469,7 @@ const LandingPage = () => {
                 }
                 ctx.restore();
 
-                // Draw Orbiting Food (Satellites) - Desktop Only
-                if (!isMobile) {
-                    orbitingFood.forEach(o => {
-                        const ox = centerX + Math.cos(o.angle) * (o.radius * 1.2);
-                        const oy = centerY + Math.sin(o.angle) * (o.radius * 1.2);
-
-                        ctx.save();
-                        ctx.translate(ox, oy);
-                        ctx.rotate(o.angle * 2);
-                        ctx.font = `${o.size}px Arial`;
-                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                        ctx.fillText(o.emoji, 0, 0);
-                        ctx.restore();
-                    });
-                }
+                // Draw Orbiting Food Removed
 
                 // Draw Food Meteorites
                 // Draw Food Meteorites (Realistic Burn Effect)
