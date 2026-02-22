@@ -233,7 +233,7 @@ const ChatWidget = () => {
                                         <span className="truncate max-w-[180px]">{rest.address}</span>
                                     </div>
                                     <button
-                                        onClick={() => handleViewRestaurant(rest._id)}
+                                        onClick={() => handleViewRestaurant(rest._id || rest.id)}
                                         className="w-full bg-gray-700 hover:bg-gray-600 text-white text-xs py-2 rounded-lg transition-colors flex items-center justify-center gap-2 group"
                                     >
                                         View Menu <ChevronRight size={12} className="group-hover:translate-x-1 transition-transform" />

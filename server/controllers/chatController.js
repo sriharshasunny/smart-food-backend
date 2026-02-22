@@ -70,12 +70,14 @@ exports.processChatRequest = async (req, res) => {
             - location (string or null)
             - rating_min (number or null)
             - open_now (true/false/null)
+            - limit (number or null): The maximum number of items the user requested (e.g., "top 3", "5 items").
 
             For search_restaurant intent, extract:
             - restaurant_name (string or null)
             - location (string or null)
             - rating_min (number or null)
             - open_now (true/false/null)
+            - limit (number or null): The maximum number of items the user requested (e.g., "top 3", "show me 2").
             
             For get_orders intent, extract:
              - limit (number, default 5)
@@ -203,7 +205,8 @@ async function searchFood(filters) {
     // Note: 'location' and 'open_now' might need joins with restaurant table if not denormalized
 
     // Limit results
-    query = query.limit(10);
+    const resultLimit = filters.limit ? Math.min(filters.limit, 20) : 10;
+    query = query.limit(resultLimit);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -225,7 +228,8 @@ async function searchRestaurants(filters) {
     // open_now logic depends on how you store hours. 
     // Assuming simple boolean for now or omitted.
 
-    query = query.limit(5);
+    const resultLimit = filters.limit ? Math.min(filters.limit, 20) : 5;
+    query = query.limit(resultLimit);
 
     const { data, error } = await query;
     if (error) throw error;
