@@ -448,7 +448,7 @@ const Home = () => {
                     </div>
 
                     {/* B. Sticky Filter Bar (Text Mode) - Slides down when main is gone */}
-                    <div className={`fixed top-[64px] left-0 w-full z-50 bg-white/95 backdrop-blur-md shadow-md transition-all duration-300 transform ${showStickyFilters ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'}`}>
+                    <div className={`fixed top-[54px] md:top-[70px] left-0 w-full z-40 bg-white/95 backdrop-blur-md shadow-md transition-all duration-300 transform ${showStickyFilters ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'}`}>
                         <FilterBar
                             activeCategory={activeCategory}
                             setActiveCategory={setActiveCategory}
