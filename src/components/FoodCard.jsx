@@ -28,64 +28,67 @@ const FoodCard = memo(({ food, restaurantName, variant = 'vertical', isFeatured 
     if (variant === 'horizontal') {
         return (
             <div
-                className="bg-white rounded-2xl p-3 border border-gray-100 flex gap-4 relative group hover:border-orange-200 transition-colors will-change-transform transform-gpu"
+                className="bg-white rounded-3xl p-4 md:p-6 flex justify-between gap-6 relative group hover:bg-orange-50/30 transition-colors will-change-transform transform-gpu border border-transparent hover:border-orange-100"
             >
-
-                {/* Image Section - Square - Optimized loading */}
-                <div className="relative w-28 h-28 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
-                    <img
-                        src={optimizeImage(food.image, 200)} // Optimize for thumbnail
-                        alt={food.name}
-                        loading="lazy"
-                        decoding="async"
-                        className="w-full h-full object-cover transform"
-                    />
-
-                    {/* Veg/Non-veg Indicator */}
-                    <div className={`absolute top-1.5 left-1.5 w-4 h-4 rounded border flex items-center justify-center bg-white ${food.isVeg ? 'border-green-600' : 'border-red-600'}`}>
-                        <div className={`w-2 h-2 rounded-full ${food.isVeg ? 'bg-green-600' : 'bg-red-600'}`}></div>
-                    </div>
-
-                    {/* Wishlist Button - Simplified interactions */}
-                    <button
-                        onClick={handleWishlist}
-                        className="absolute top-1.5 right-1.5 p-1.5 rounded-full bg-white/90 text-gray-400 hover:text-red-500 transition-colors shadow-sm"
-                    >
-                        <Heart className={`w-3.5 h-3.5 ${isWishlisted ? 'fill-red-500 text-red-500' : ''}`} />
-                    </button>
-                </div>
-
-                {/* Content Section */}
-                <div className="flex-1 flex flex-col min-w-0">
-                    <div className="flex justify-between items-start">
-                        <h3 className="font-bold text-gray-900 leading-tight line-clamp-1 mb-1 pr-4">
+                {/* 1. Content Section (Left Side) */}
+                <div className="flex-1 flex flex-col min-w-0 pr-2">
+                    {/* Veg/Non-veg Indicator & Title */}
+                    <div className="flex flex-col gap-1 mb-1">
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center bg-white ${food.isVeg ? 'border-green-600' : 'border-red-600'}`}>
+                            <div className={`w-2 h-2 rounded-full ${food.isVeg ? 'bg-green-600' : 'bg-red-600'}`}></div>
+                        </div>
+                        <h3 className="font-bold text-gray-900 text-lg leading-tight mt-1">
                             {food.name}
                         </h3>
                     </div>
 
-                    <p className="text-gray-500 text-xs line-clamp-2 mb-auto leading-relaxed">
-                        {food.description}
-                    </p>
-
-                    {/* Rating and Time */}
-                    <div className="flex items-center gap-3 mb-3 text-xs text-gray-500 font-medium">
-                        <div className="flex items-center gap-1 bg-yellow-50 px-1.5 py-0.5 rounded text-yellow-700">
-                            <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
-                            <span>{food.rating || 4.2}</span>
-                        </div>
-                        <span>•</span>
-                        <span>{food.time || '25'}m</span>
+                    {/* Price */}
+                    <div className="font-bold text-gray-900 mb-2 mt-0.5 relative flex items-center gap-2">
+                        <span>₹{food.price}</span>
+                        {food.price > 300 && <span className="text-[10px] bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded font-black uppercase tracking-wider">Premium</span>}
                     </div>
 
-                    {/* Price and Add Button */}
-                    <div className="flex items-center justify-between mt-1">
-                        <span className="font-black text-lg text-gray-900">₹{food.price}</span>
+                    {/* Rating if available */}
+                    {food.rating && (
+                        <div className="flex items-center gap-1 mb-3">
+                            <Star className="w-3.5 h-3.5 fill-green-700 text-green-700" />
+                            <span className="text-green-700 font-bold text-xs">{food.rating}</span>
+                        </div>
+                    )}
 
+                    <p className="text-gray-500 text-sm line-clamp-2 md:line-clamp-3 leading-relaxed w-full max-w-sm mt-1">
+                        {food.description}
+                    </p>
+                </div>
+
+                {/* 2. Image Section (Right Side) */}
+                <div className="relative w-32 h-32 md:w-40 md:h-40 flex-shrink-0 mt-2">
+                    <div className="w-full h-full overflow-hidden rounded-2xl bg-gray-100 shadow-sm group-hover:shadow-md transition-shadow">
+                        <img
+                            src={optimizeImage(food.image, 300)}
+                            alt={food.name}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-cover transform"
+                        />
+                    </div>
+
+                    {/* Wishlist Button - Top Right of Image */}
+                    <button
+                        onClick={handleWishlist}
+                        className="absolute top-2 right-2 p-1.5 rounded-full bg-white/90 text-gray-400 hover:text-red-500 transition-colors shadow-sm"
+                    >
+                        <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-red-500 text-red-500' : ''}`} />
+                    </button>
+
+                    {/* Add Button - Overlapping Bottom Edge */}
+                    <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-[85%]">
                         <button
                             onClick={handleAdd}
-                            className="bg-orange-50 text-orange-600 hover:bg-orange-100 font-bold py-1.5 px-4 rounded-lg text-xs uppercase tracking-wide flex items-center gap-1 transition-colors"
+                            className="w-full bg-white text-green-600 hover:text-white hover:bg-green-600 font-black py-2.5 px-0 rounded-xl text-sm md:text-base tracking-wide flex justify-center items-center gap-1 transition-all shadow-md hover:shadow-lg border border-gray-200 hover:border-green-600"
                         >
-                            ADD <Plus className="w-3 h-3" />
+                            ADD
+                            <span className="text-lg font-light leading-none mb-0.5">+</span>
                         </button>
                     </div>
                 </div>
