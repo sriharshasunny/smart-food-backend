@@ -344,9 +344,9 @@ const LandingPage = () => {
                         zigzag = Math.sin(timestamp * 0.005) * 50;
                     }
 
-                    ufo.vel.x += (dx + zigzag) * 0.5 * dt;
-                    ufo.vel.y += dy * 0.5 * dt;
-                    const friction = Math.pow(0.1, dt);
+                    ufo.vel.x += (dx + zigzag) * 0.2 * dt;
+                    ufo.vel.y += dy * 0.2 * dt;
+                    const friction = Math.pow(0.05, dt);
                     ufo.vel.x *= friction;
                     ufo.vel.y *= friction;
 
@@ -363,9 +363,9 @@ const LandingPage = () => {
                     const dy = centerY - ufo.pos.y;
                     const dist = Math.hypot(dx, dy);
 
-                    ufo.vel.x += dx * 0.5 * dt;
-                    ufo.vel.y += dy * 0.5 * dt;
-                    const warpFriction = Math.pow(0.01, dt);
+                    ufo.vel.x += dx * 0.3 * dt;
+                    ufo.vel.y += dy * 0.3 * dt;
+                    const warpFriction = Math.pow(0.02, dt);
                     ufo.vel.x *= warpFriction;
                     ufo.vel.y *= warpFriction;
 
@@ -404,8 +404,8 @@ const LandingPage = () => {
                     }
                 }
 
-                ufo.pos.x += ufo.vel.x * dt * 8;
-                ufo.pos.y += ufo.vel.y * dt * 8;
+                ufo.pos.x += ufo.vel.x * dt * 3.5;
+                ufo.pos.y += ufo.vel.y * dt * 3.5;
 
                 if (ufo.opacity > 0.1 && (Math.abs(ufo.vel.x) > 0.1 || Math.abs(ufo.vel.y) > 0.1)) {
                     const vLen = Math.hypot(ufo.vel.x, ufo.vel.y) || 1;
