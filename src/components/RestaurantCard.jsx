@@ -53,9 +53,9 @@ const RestaurantCard = memo(({ restaurant }) => {
                         <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} />
                     </button>
 
-                    {/* Prominent Rating - Premium Liquid Gold Style */}
-                    <div className="absolute bottom-3 left-3 bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 px-2.5 py-1.5 rounded-lg text-white text-[11px] font-black shadow-lg shadow-orange-500/30 flex items-center gap-1.5 border border-white/20 backdrop-blur-md">
-                        {rating || 4.5} <Star className="w-3 h-3 fill-white/90 text-white/90" />
+                    {/* Prominent Rating - Liquid Dark with Gold Text */}
+                    <div className="absolute bottom-3 left-3 bg-black/40 backdrop-blur-md px-2.5 py-1.5 rounded-lg text-yellow-400 text-[11px] font-black shadow-[0_4px_12px_rgba(0,0,0,0.5)] flex items-center gap-1.5 border border-white/10 ring-1 ring-white/5">
+                        {rating || 4.5} <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]" />
                     </div>
                 </div>
 
