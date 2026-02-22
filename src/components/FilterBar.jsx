@@ -19,10 +19,10 @@ const FilterBar = ({ activeCategory, setActiveCategory, subFilters, setSubFilter
                     : 'relative w-full bg-transparent px-0' // Normal: parent padding applies or we reset it here? User said "only 15 dp right and left"
                 }`}
         >
-            <div className={`w-full h-full flex flex-col gap-2 ${isSticky ? 'pt-2' : ''}`}>
+            <div className={`w-full h-full flex items-center justify-between gap-4 ${isSticky ? '' : ''}`}>
 
-                {/* 1. Categories (Row 1 - Stretches horizontally) */}
-                <div className={`w-full overflow-hidden flex items-center`}>
+                {/* 1. Categories (Stretches) */}
+                <div className={`flex-1 min-w-0 overflow-hidden h-full flex items-center`}>
                     <CategoryFilter
                         categories={categories}
                         activeCategory={activeCategory}
@@ -31,8 +31,8 @@ const FilterBar = ({ activeCategory, setActiveCategory, subFilters, setSubFilter
                     />
                 </div>
 
-                {/* 2. Secondary Filters (Row 2 - Horizontally Stacked & Scrollable) */}
-                <div className={`w-full overflow-x-auto hide-scrollbar flex items-center gap-3 pb-3 ${isSticky ? 'pb-2' : ''}`}>
+                {/* 2. Secondary Filters (Right Side) */}
+                <div className="flex-shrink-0 flex items-center gap-3">
 
                     {/* Top Rated */}
                     <motion.button
@@ -50,7 +50,7 @@ const FilterBar = ({ activeCategory, setActiveCategory, subFilters, setSubFilter
                         whileTap={{ scale: 0.95 }}
                         whileHover={{ scale: 1.05 }}
                         onClick={() => toggleSubFilter('vegOnly')}
-                        className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-1.5
+                        className={`px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-1.5
                             ${subFilters.vegOnly
                                 ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg shadow-green-500/20 ring-1 ring-green-500/20 scale-105'
                                 : 'bg-white text-gray-600 border border-gray-200 hover:border-green-300 hover:text-green-600 hover:shadow-md'
@@ -65,7 +65,7 @@ const FilterBar = ({ activeCategory, setActiveCategory, subFilters, setSubFilter
                             whileTap={{ scale: 0.95 }}
                             whileHover={{ scale: 1.05 }}
                             onClick={() => setShowPriceSlider(!showPriceSlider)}
-                            className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-2
+                            className={`px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-2
                                 ${subFilters.maxPrice < 1000
                                     ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/20 ring-1 ring-orange-500/20 scale-105'
                                     : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300 hover:text-orange-600 hover:shadow-md'
@@ -73,17 +73,17 @@ const FilterBar = ({ activeCategory, setActiveCategory, subFilters, setSubFilter
                         >
                             <span>{subFilters.maxPrice < 1000 ? `Under ₹${subFilters.maxPrice}` : 'Budget'}</span>
                             {subFilters.maxPrice < 1000 && (
-                                <X size={12} className="z-10" onClick={(e) => { e.stopPropagation(); setSubFilters(prev => ({ ...prev, maxPrice: 1000 })); }} />
+                                <X size={12} onClick={(e) => { e.stopPropagation(); setSubFilters(prev => ({ ...prev, maxPrice: 1000 })); }} />
                             )}
                         </motion.button>
 
                         <AnimatePresence>
                             {showPriceSlider && (
                                 <motion.div
-                                    initial={{ opacity: 0, y: isSticky ? 10 : -10, scale: 0.95 }}
+                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: isSticky ? 10 : -10, scale: 0.95 }}
-                                    className={`absolute left-0 ${isSticky ? 'top-full mt-3 origin-top-left' : 'bottom-full mb-3 origin-bottom-left'} bg-white p-5 rounded-2xl shadow-xl border border-gray-100 z-[60] w-72`}
+                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    className="absolute right-0 top-full mt-3 bg-white p-5 rounded-2xl shadow-xl border border-gray-100 z-50 w-72 origin-top-right"
                                 >
                                     <div className="flex justify-between items-center mb-4">
                                         <span className="text-sm font-bold text-gray-800">Max Price</span>
