@@ -28,7 +28,7 @@ const FoodCard = memo(({ food, restaurantName, variant = 'vertical', isFeatured 
     if (variant === 'horizontal') {
         return (
             <div
-                className="bg-white rounded-2xl p-3 border border-gray-100 flex gap-4 relative group hover:border-orange-200 transition-colors will-change-transform"
+                className="bg-white rounded-2xl p-3 border border-gray-100 flex gap-4 relative group hover:border-orange-200 transition-colors will-change-transform transform-gpu"
             >
 
                 {/* Image Section - Square - Optimized loading */}
@@ -95,7 +95,7 @@ const FoodCard = memo(({ food, restaurantName, variant = 'vertical', isFeatured 
 
     // Vertical layout (original - for home page grid)
     return (
-        <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-orange-200 hover:shadow-lg transition-all duration-300 group flex flex-col h-full will-change-transform transform hover:-translate-y-1">
+        <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-orange-200 hover:shadow-lg transition-all duration-300 group flex flex-col h-full will-change-transform transform transform-gpu hover:-translate-y-1">
 
             {/* Image Section - Fixed Height for Layout Stability */}
             <div className="relative h-40 bg-gray-100 overflow-hidden">

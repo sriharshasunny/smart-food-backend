@@ -4,14 +4,12 @@ import Lenis from 'lenis';
 const SmoothScroll = () => {
     useEffect(() => {
         const lenis = new Lenis({
-            duration: 0.9, // Lighter, snappier feel (was 1.2)
-            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-            direction: 'vertical',
-            gestureDirection: 'vertical',
-            smooth: true,
-            mouseMultiplier: 1,
-            smoothTouch: false,
-            touchMultiplier: 2,
+            duration: 0.8, // Slightly faster, snappier
+            easing: (t) => 1 - Math.pow(1 - t, 3), // Simpler cubic easing for less math overhead in 90Hz+ displays
+            smoothWheel: true,
+            wheelMultiplier: 0.9,
+            syncTouch: true, // Ensure touch syncs seamlessly with the scroll thread
+            touchMultiplier: 1.5,
         });
 
         function raf(time) {

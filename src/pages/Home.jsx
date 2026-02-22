@@ -62,6 +62,7 @@ const Home = () => {
     const [viewMode, setViewMode] = useState('restaurants'); // 'restaurants' | 'recs'
     const [isSticky, setIsSticky] = useState(false);
     const filterRef = React.useRef(null);
+    const observerTargetRef = React.useRef(null); // Invisible target for IntersectionObserver
     const sectionHeaderRef = React.useRef(null); // Track the "Explore Food Items" text
 
     // --- Geolocation State ---
@@ -109,17 +110,29 @@ const Home = () => {
     const [showStickyFilters, setShowStickyFilters] = useState(false);
 
     React.useEffect(() => {
-        const handleScroll = () => {
-            if (filterRef.current) {
-                const rect = filterRef.current.getBoundingClientRect();
-                // Show sticky bar only when the main filter bar has almost scrolled out of view (e.g. bottom touches top nav)
-                // rect.bottom <= 64 (Navbar height) + some buffer if needed
-                setShowStickyFilters(rect.bottom <= 100);
-            }
+        const observerOptions = {
+            root: null,
+            rootMargin: '-100px 0px 0px 0px', // Trigger when target is 100px from top
+            threshold: 0
         };
 
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
+        const observerCallback = (entries) => {
+            const [entry] = entries;
+            // When the invisible tracker above the filter bar scrolls OUT of the top bounding box, component is sticky
+            setShowStickyFilters(!entry.isIntersecting);
+        };
+
+        const observer = new IntersectionObserver(observerCallback, observerOptions);
+        const currentTarget = observerTargetRef.current;
+
+        if (currentTarget) {
+            observer.observe(currentTarget);
+        }
+
+        return () => {
+            if (currentTarget) observer.unobserve(currentTarget);
+            observer.disconnect();
+        };
     }, []);
 
     // --- Auto-Scroll on Search ---
@@ -300,7 +313,7 @@ const Home = () => {
 
                         {/* Content Area */}
                         <ErrorBoundary key={viewMode}>
-                            <div ref={restaurantContainerRef} className="w-full overflow-x-auto overflow-y-hidden pb-4 pt-1 hide-scrollbar flex snap-x scroll-pl-4 gap-4 relative z-10 h-full items-center px-1 scroll-smooth touch-pan-x overscroll-contain">
+                            <div ref={restaurantContainerRef} className="w-full overflow-x-auto overflow-y-hidden pb-4 pt-1 hide-scrollbar flex snap-x scroll-pl-4 gap-4 relative z-10 h-full items-center px-1 scroll-smooth touch-pan-x overscroll-contain transform-gpu">
                                 {viewMode === 'restaurants' ? (
                                     filteredData.restaurants.map((restaurant) => (
                                         <RestaurantCard key={restaurant.id} restaurant={restaurant} />
@@ -352,7 +365,7 @@ const Home = () => {
                         </div>
 
                         {/* Quick Grid (Vertical Scroll) - Simple Rainbow Cards */}
-                        <div ref={trendingContainerRef} data-lenis-prevent className="flex flex-col overflow-y-auto pr-1 hide-scrollbar gap-2 relative z-10 h-full pt-1 scroll-smooth touch-pan-y overscroll-contain">
+                        <div ref={trendingContainerRef} data-lenis-prevent className="flex flex-col overflow-y-auto pr-1 hide-scrollbar gap-2 relative z-10 h-full pt-1 scroll-smooth touch-pan-y overscroll-contain transform-gpu">
 
 
                             {filteredData.dishes.slice(0, 6).map((dish) => (
@@ -422,6 +435,9 @@ const Home = () => {
 
                 {/* 3. Filter Stack (MAIN + STICKY) */}
                 <div className="relative">
+                    {/* Invisible tracker for Observer */}
+                    <div ref={observerTargetRef} className="absolute -top-10 w-full h-1 pointer-events-none" />
+
                     {/* A. Main Filters (Visual Glossy Mode) - Scrolls away */}
                     <div ref={filterRef} className="w-full z-10 relative">
                         <FilterBar
