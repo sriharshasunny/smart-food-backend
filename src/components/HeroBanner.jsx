@@ -147,7 +147,6 @@ const HeroBanner = ({ topRightContent }) => {
                             <img
                                 src={offer.image}
                                 alt={offer.title}
-                                loading={index === 0 ? "eager" : "lazy"}
                                 decoding="async"
                                 className={`w-full h-full object-cover object-center transition-transform duration-[10000ms] ease-out saturate-125 brightness-110 contrast-110 ${index === currentIndex ? 'scale-105' : 'scale-100'}`}
                                 style={{ willChange: 'transform' }}

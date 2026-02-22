@@ -103,12 +103,7 @@ body {
     }
   }
 
-  /* Performance Utility */
-  .content-visibility-auto {
-    content-visibility: auto;
-    contain-intrinsic-size: 1px 1px;
-    /* Fallback size */
-  }
+
 
   /* GPU Acceleration & Smoothness */
   .gpu-accelerated {
