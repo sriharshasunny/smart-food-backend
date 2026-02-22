@@ -223,8 +223,13 @@ const RestaurantDetails = () => {
                         <div className="h-full w-full bg-white rounded-[calc(2rem-2px)]"></div>
                     </div>
 
-                    <div className="relative bg-white rounded-[2rem] p-6 md:p-8 flex flex-wrap items-center justify-between gap-8">
-                        <div className="flex items-center gap-10 md:gap-16 w-full md:w-auto justify-around md:justify-start">
+                    <div className="relative bg-white/95 backdrop-blur-xl rounded-[2rem] p-6 md:p-8 flex flex-wrap items-center justify-between gap-8 border border-white/50 group/card transition-all duration-500 hover:shadow-2xl hover:-translate-y-1">
+                        {/* Shimmer Effect */}
+                        <div className="absolute inset-0 rounded-[2rem] overflow-hidden opacity-0 group-hover/card:opacity-100 transition-opacity duration-700 pointer-events-none">
+                            <div className="absolute top-0 -left-[100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-12 animate-[shimmer_2s_infinite]" />
+                        </div>
+
+                        <div className="relative z-10 flex items-center gap-10 md:gap-16 w-full md:w-auto justify-around md:justify-start">
                             {/* Rating */}
                             <div className="flex flex-col items-center md:items-start gap-2">
                                 <div className="flex items-center gap-2 text-gray-900">
@@ -268,7 +273,7 @@ const RestaurantDetails = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
                     {/* Categories Sidebar - Compact */}
-                    <div className="hidden lg:block lg:col-span-2 sticky top-28 bg-white rounded-2xl p-4 shadow-lg border border-gray-100">
+                    <div className="hidden lg:block lg:col-span-2 sticky top-28 bg-white/80 backdrop-blur-md rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
                         <h3 className="font-black text-gray-900 text-sm mb-4 uppercase tracking-wider flex items-center gap-2">
                             Menu <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-orange-500 to-red-500 animate-pulse"></span>
                         </h3>
@@ -323,9 +328,9 @@ const RestaurantDetails = () => {
                             <div className="w-px h-8 bg-gray-200 mx-2"></div>
                             <button
                                 onClick={() => setVegOnly(!vegOnly)}
-                                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${vegOnly
-                                    ? 'bg-green-500 text-white shadow-md shadow-green-500/25'
-                                    : 'hover:bg-gray-50 text-gray-500'
+                                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 border ${vegOnly
+                                    ? 'bg-green-50 border-green-200 text-green-700 shadow-sm'
+                                    : 'bg-white border-gray-200 text-gray-500 hover:border-green-200 hover:text-green-600'
                                     }`}
                             >
                                 <span className={`w-2 h-2 rounded-full ${vegOnly ? 'bg-white' : 'bg-green-500'}`}></span>
@@ -357,9 +362,16 @@ const RestaurantDetails = () => {
                                             {displayGroups[category].map((item, index) => {
                                                 // Simplified Grid: Uniform sizing for all cards
                                                 return (
-                                                    <div key={item.id} className="col-span-1 h-full">
+                                                    <motion.div
+                                                        key={item.id}
+                                                        className="col-span-1 h-full"
+                                                        initial={{ opacity: 0, y: 15 }}
+                                                        whileInView={{ opacity: 1, y: 0 }}
+                                                        viewport={{ once: true, margin: "-50px" }}
+                                                        transition={{ duration: 0.4, delay: index * 0.05 }}
+                                                    >
                                                         <FoodCard food={item} isFeatured={false} restaurantName={restaurant.name} />
-                                                    </div>
+                                                    </motion.div>
                                                 );
                                             })}
                                         </div>
