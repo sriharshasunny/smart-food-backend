@@ -146,7 +146,7 @@ const LandingPage = () => {
         }));
 
         // Entities: Orbiting Food (Satellites)
-        const orbitingCount = isMobile ? 3 : 5;
+        const orbitingCount = 2;
         const orbitingFood = Array.from({ length: orbitingCount }, (_, i) => ({
             emoji: FOOD_EMOJIS[i % FOOD_EMOJIS.length],
             angle: (i / orbitingCount) * Math.PI * 2,
@@ -155,49 +155,17 @@ const LandingPage = () => {
             size: isMobile ? 25 : 35
         }));
 
-        // Entities: Food Meteorites (Restored)
+        // Entities: Food Meteorites (Disabled as requested)
         let foodMeteorites = [];
         let meteoriteTimer = 0;
         const spawnMeteorite = () => {
-            if (isMobile && Math.random() > 0.5) return;
-            // Spawn off-screen top-right or top-left
-            const startLeft = Math.random() > 0.5;
-            foodMeteorites.push({
-                x: startLeft ? -100 : width + 100,
-                y: -100,
-                vx: (startLeft ? 1 : -1) * (150 + Math.random() * 100),
-                vy: 150 + Math.random() * 100,
-                emoji: FOOD_EMOJIS[Math.floor(Math.random() * FOOD_EMOJIS.length)],
-                size: Math.random() * 20 + 30,
-                rot: Math.random() * Math.PI * 2,
-                rotSpeed: (Math.random() - 0.5) * 4,
-                trail: [] // Store previous positions
-            });
+            // Disabled
         };
 
-        // Entities: Emitted Food (Mobile & Laptop)
+        // Entities: Emitted Food (Disabled as requested)
         let emittedFoods = [];
         const spawnFoodBurst = () => {
-            // Burst Settings: Mobile = 5 items, Laptop = 3-4 items
-            const count = isMobile ? 5 : Math.floor(Math.random() * 2) + 3;
-
-            for (let i = 0; i < count; i++) {
-                // Radial spread
-                const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
-                // Faster speed on desktop to cover more screen
-                const speed = (isMobile ? 60 : 80) + Math.random() * 40;
-
-                emittedFoods.push({
-                    x: centerX, y: centerY,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    emoji: FOOD_EMOJIS[Math.floor(Math.random() * FOOD_EMOJIS.length)],
-                    life: 1.2, // Slightly longer life
-                    scale: 0.5,
-                    rot: Math.random() * Math.PI,
-                    rotSpeed: (Math.random() - 0.5) * 2
-                });
-            }
+            // Disabled
         };
 
 
@@ -236,12 +204,10 @@ const LandingPage = () => {
                     spawnFoodBurst(); // Trigger burst on change (Both views)
                 }
 
-                // Update Orbiting Food (Desktop Only)
-                if (!isMobile) {
-                    orbitingFood.forEach(o => {
-                        o.angle += o.speed * dt;
-                    });
-                }
+                // Update Orbiting Food (Enable on both Mobile and Desktop)
+                orbitingFood.forEach(o => {
+                    o.angle += o.speed * dt;
+                });
 
                 // Food Meteorite Logic REMOVED
 
