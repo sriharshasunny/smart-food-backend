@@ -119,27 +119,61 @@ const LandingPage = () => {
             speed: 50 + Math.random() * 80 // MUCHO FASTER
         }));
 
-        // Entities: Shooting Stars (REMOVED FOR LOW VRAM)
+        // Entities: Shooting Stars
         let shootingStars = [];
-        const spawnShootingStar = () => { };
+        const spawnShootingStar = () => {
+            if (isMobile && Math.random() > 0.3) return; // Less frequent on mobile
+            shootingStars.push({
+                x: Math.random() * width,
+                y: -50,
+                length: Math.random() * 80 + 40,
+                speed: Math.random() * 20 + 20,
+                angle: (Math.PI / 4) + (Math.random() * 0.2 - 0.1), // Angled down-right
+                opacity: 1,
+                life: 1
+            });
+        };
 
-        // Entities: Space Dust (REMOVED FOR LOW VRAM)
-        const dust = [];
-
-        // Entities: Orbiting Food (Satellites)
-        // 3 items orbiting tightly
-        const orbitingFood = Array.from({ length: 3 }, (_, i) => ({
-            emoji: FOOD_EMOJIS[i % 5],
-            angle: (i / 3) * Math.PI * 2,
-            radius: 80 + (i % 2) * 20,
-            speed: 0.5 + (i % 2) * 0.2,
-            size: 30
+        // Entities: Space Dust
+        const dustCount = isMobile ? 15 : 40;
+        const dust = Array.from({ length: dustCount }, () => ({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            size: Math.random() * 2 + 1,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: (Math.random() - 0.5) * 0.5,
+            opacity: Math.random() * 0.3 + 0.1
         }));
 
-        // Entities: Food Meteorites (REMOVED FOR LOW VRAM)
+        // Entities: Orbiting Food (Satellites)
+        const orbitingCount = isMobile ? 3 : 5;
+        const orbitingFood = Array.from({ length: orbitingCount }, (_, i) => ({
+            emoji: FOOD_EMOJIS[i % FOOD_EMOJIS.length],
+            angle: (i / orbitingCount) * Math.PI * 2,
+            radius: (isMobile ? 80 : 120) + (i % 2) * 30, // Staggered radii
+            speed: 0.8 + (i % 2) * 0.4,
+            size: isMobile ? 25 : 35
+        }));
+
+        // Entities: Food Meteorites (Restored)
         let foodMeteorites = [];
         let meteoriteTimer = 0;
-        const spawnMeteorite = () => { };
+        const spawnMeteorite = () => {
+            if (isMobile && Math.random() > 0.5) return;
+            // Spawn off-screen top-right or top-left
+            const startLeft = Math.random() > 0.5;
+            foodMeteorites.push({
+                x: startLeft ? -100 : width + 100,
+                y: -100,
+                vx: (startLeft ? 1 : -1) * (150 + Math.random() * 100),
+                vy: 150 + Math.random() * 100,
+                emoji: FOOD_EMOJIS[Math.floor(Math.random() * FOOD_EMOJIS.length)],
+                size: Math.random() * 20 + 30,
+                rot: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random() - 0.5) * 4,
+                trail: [] // Store previous positions
+            });
+        };
 
         // Entities: Emitted Food (Mobile & Laptop)
         let emittedFoods = [];
@@ -333,15 +367,65 @@ const LandingPage = () => {
                 ufo.pos.x += ufo.vel.x * dt * 3.5;
                 ufo.pos.y += ufo.vel.y * dt * 3.5;
 
-                // UFO Trail Logic REMOVED
-                // Shooting Star Logic REMOVED
+                // Update Shooting Stars
+                if (Math.random() < (isMobile ? 0.005 : 0.01)) spawnShootingStar();
+                shootingStars.forEach((star, index) => {
+                    star.x += Math.cos(star.angle) * star.speed * dt * 50;
+                    star.y += Math.sin(star.angle) * star.speed * dt * 50;
+                    star.life -= dt * 0.8;
+                    if (star.life <= 0 || star.y > height + 100 || star.x > width + 100) {
+                        shootingStars.splice(index, 1);
+                    }
+                });
+
+                // Update Dust
+                dust.forEach(d => {
+                    d.x += d.vx * dt * 50;
+                    d.y += d.vy * dt * 50;
+                    if (d.x < 0) d.x = width; if (d.x > width) d.x = 0;
+                    if (d.y < 0) d.y = height; if (d.y > height) d.y = 0;
+                });
+
+                // Update Meteorites
+                meteoriteTimer += dt;
+                if (meteoriteTimer > (isMobile ? 7 : 4)) {
+                    spawnMeteorite();
+                    meteoriteTimer = 0;
+                }
+
+                foodMeteorites.forEach((m, index) => {
+                    m.x += m.vx * dt;
+                    m.y += m.vy * dt;
+                    m.rot += m.rotSpeed * dt;
+
+                    m.trail.push({ x: m.x, y: m.y, life: 1 });
+                    if (m.trail.length > 15) m.trail.shift();
+                    m.trail.forEach(t => t.life -= dt * 2);
+
+                    if (m.y > height + 200 || m.x < -200 || m.x > width + 200) {
+                        foodMeteorites.splice(index, 1);
+                    }
+                });
 
 
                 // 2. DRAW
                 // Standard Clear
                 ctx.clearRect(0, 0, width, height);
 
-                // Nebulas Removed for Performance
+                // Draw Nebulas (Restored)
+                const nebulaCount = isMobile ? 1 : 2;
+                ctx.save();
+                ctx.globalCompositeOperation = 'screen';
+                for (let i = 0; i < nebulaCount; i++) {
+                    const nx = width * (0.2 + i * 0.5) + Math.sin(coreTimer * 0.2 + i) * 100;
+                    const ny = height * (0.3 + i * 0.4) + Math.cos(coreTimer * 0.1 + i) * 100;
+                    const nGrad = ctx.createRadialGradient(nx, ny, 0, nx, ny, width * 0.4);
+                    nGrad.addColorStop(0, i === 0 ? 'rgba(80, 20, 150, 0.15)' : 'rgba(20, 80, 150, 0.15)');
+                    nGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = nGrad;
+                    ctx.beginPath(); ctx.arc(nx, ny, width * 0.4, 0, Math.PI * 2); ctx.fill();
+                }
+                ctx.restore();
                 // 0. SMOOTH INPUT (Lerp) - Improved Responsiveness for Parallax
                 // factor 0.1 gives a nice weight/delay to the movement
                 mouse.x += (targetMouse.x - mouse.x) * 0.1;
@@ -387,7 +471,26 @@ const LandingPage = () => {
                 });
                 ctx.globalAlpha = 1;
 
-                // Draw Passes removed: Dust, Shooting Stars, UFO Trail
+                // Draw Dust
+                ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+                dust.forEach(d => {
+                    ctx.globalAlpha = d.opacity;
+                    ctx.beginPath(); ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2); ctx.fill();
+                });
+                ctx.globalAlpha = 1;
+
+                // Draw Shooting Stars
+                ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+                ctx.lineCap = "round";
+                shootingStars.forEach(star => {
+                    ctx.globalAlpha = star.life;
+                    ctx.lineWidth = 1 + (1 - star.life);
+                    ctx.beginPath();
+                    ctx.moveTo(star.x, star.y);
+                    ctx.lineTo(star.x - Math.cos(star.angle) * star.length, star.y - Math.sin(star.angle) * star.length);
+                    ctx.stroke();
+                });
+                ctx.globalAlpha = 1;
 
                 // UFO
                 if (ufo.opacity > 0) {
@@ -439,10 +542,27 @@ const LandingPage = () => {
                     ctx.restore();
                 }
 
-                // Sun (Optimized - No Gradient)
+                // Sun (Realistic Multi-Stop Gradient)
                 const sunSize = 90 * scale * 2.0;
-                ctx.fillStyle = 'rgba(255, 120, 50, 0.15)';
-                ctx.beginPath(); ctx.arc(centerX, centerY, sunSize * 2.5, 0, Math.PI * 2); ctx.fill();
+
+                // Add atmospheric glow behind sun
+                const glowGrad = ctx.createRadialGradient(centerX, centerY, sunSize * 0.5, centerX, centerY, sunSize * 3);
+                glowGrad.addColorStop(0, 'rgba(255, 150, 50, 0.4)');
+                glowGrad.addColorStop(0.5, 'rgba(255, 80, 20, 0.1)');
+                glowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+                ctx.fillStyle = glowGrad;
+                ctx.beginPath(); ctx.arc(centerX, centerY, sunSize * 3, 0, Math.PI * 2); ctx.fill();
+
+                // Core Sun Body
+                const sunGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, sunSize * 1.5);
+                sunGrad.addColorStop(0, 'rgba(255, 255, 200, 1)');     // Hot white/yellow core
+                sunGrad.addColorStop(0.2, 'rgba(255, 200, 50, 0.9)');  // Bright orange
+                sunGrad.addColorStop(0.6, 'rgba(255, 100, 20, 0.4)');  // Deep orange/red
+                sunGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');           // Fade to space
+
+                ctx.fillStyle = sunGrad;
+                ctx.beginPath(); ctx.arc(centerX, centerY, sunSize * 1.5, 0, Math.PI * 2); ctx.fill();
 
                 // Core Emoji
                 const pulse = 1 + Math.sin(timestamp * 0.003) * 0.03;
@@ -469,7 +589,30 @@ const LandingPage = () => {
                 }
                 ctx.restore();
 
-                // Draw Orbiting Food Removed
+                ctx.restore();
+
+                // Draw Orbiting Food (Restored)
+                orbitingFood.forEach(satellite => {
+                    satellite.angle += satellite.speed * dt;
+                    const sx = centerX + Math.cos(satellite.angle) * satellite.radius * scale * 1.5;
+                    // Apply slight perspective tilt via Y scaling
+                    const sy = centerY + Math.sin(satellite.angle) * satellite.radius * scale * 0.5;
+
+                    ctx.save();
+                    ctx.translate(sx, sy);
+                    // Counter-rotate to keep emoji upright, or let it spin
+                    ctx.rotate(satellite.angle * 0.5);
+                    ctx.scale(scale * 1.5, scale * 1.5);
+                    ctx.font = `${satellite.size}px Arial`;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+
+                    // Add subtle shadow for depth
+                    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                    ctx.shadowBlur = 10;
+
+                    ctx.fillText(satellite.emoji, 0, 0);
+                    ctx.restore();
+                });
 
                 // Draw Food Meteorites
                 // Draw Food Meteorites (Realistic Burn Effect)
