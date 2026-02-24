@@ -50,6 +50,7 @@ const LandingPage = () => {
 
     // Current Displayed Food
     const [currentFood, setCurrentFood] = useState(ASSETS.burger3D);
+    const [isSplit, setIsSplit] = useState(false);
     const foodKeys = [ASSETS.burger3D, ASSETS.pizza3D, ASSETS.taco3D, ASSETS.fries3D];
 
     useEffect(() => {
@@ -318,23 +319,55 @@ const LandingPage = () => {
                 <div className="w-full md:w-1/2 flex items-center justify-center relative min-h-[40vh] md:min-h-0 order-1 md:order-2 mt-20 md:mt-0 pointer-events-none" style={{ perspective: "1500px" }}>
                     <motion.div
                         style={{ rotateX, rotateY }}
-                        className="relative z-20"
+                        className="relative z-20 pointer-events-auto cursor-pointer"
+                        onClick={() => setIsSplit(!isSplit)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                     >
                         {/* Huge glow behind the food */}
                         <div className="absolute inset-0 bg-gradient-to-tr from-orange-500 to-purple-600 rounded-full blur-[100px] opacity-40 mix-blend-screen scale-150 animate-pulse" />
 
-                        <AnimatePresence mode="wait">
-                            <motion.img
-                                key={currentFood}
-                                initial={{ opacity: 0, scale: 0.5, rotateZ: -20 }}
-                                animate={{ opacity: 1, scale: 1, rotateZ: 0 }}
-                                exit={{ opacity: 0, scale: 1.5, rotateZ: 20 }}
-                                transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
-                                src={currentFood}
-                                alt="3D Food"
-                                className="w-[300px] h-[300px] md:w-[600px] md:h-[600px] object-contain drop-shadow-[0_40px_60px_rgba(0,0,0,0.8)]"
-                            />
-                        </AnimatePresence>
+                        <div className="relative w-[300px] h-[300px] md:w-[600px] md:h-[600px]">
+                            <AnimatePresence mode="popLayout">
+                                {/* Left Half */}
+                                <motion.img
+                                    key={currentFood + "-left"}
+                                    initial={{ opacity: 0, scale: 0.5, rotateZ: -20 }}
+                                    animate={{
+                                        opacity: 1,
+                                        scale: 1,
+                                        rotateZ: isSplit ? -15 : 0,
+                                        x: isSplit ? -60 : 0,
+                                        y: isSplit ? 20 : 0
+                                    }}
+                                    exit={{ opacity: 0, scale: 1.5, rotateZ: 20 }}
+                                    transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
+                                    src={currentFood}
+                                    style={{ clipPath: 'polygon(0 0, 50% 0, 50% 100%, 0 100%)' }}
+                                    alt="3D Food Left"
+                                    className="absolute inset-0 w-full h-full object-contain drop-shadow-[0_40px_60px_rgba(0,0,0,0.8)]"
+                                />
+
+                                {/* Right Half */}
+                                <motion.img
+                                    key={currentFood + "-right"}
+                                    initial={{ opacity: 0, scale: 0.5, rotateZ: -20 }}
+                                    animate={{
+                                        opacity: 1,
+                                        scale: 1,
+                                        rotateZ: isSplit ? 15 : 0,
+                                        x: isSplit ? 60 : 0,
+                                        y: isSplit ? -20 : 0
+                                    }}
+                                    exit={{ opacity: 0, scale: 1.5, rotateZ: 20 }}
+                                    transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
+                                    src={currentFood}
+                                    style={{ clipPath: 'polygon(50% 0, 100% 0, 100% 100%, 50% 100%)' }}
+                                    alt="3D Food Right"
+                                    className="absolute inset-0 w-full h-full object-contain drop-shadow-[0_40px_60px_rgba(0,0,0,0.8)]"
+                                />
+                            </AnimatePresence>
+                        </div>
 
                         {/* Orbiting Elements (DOM Parallax) */}
                         <motion.div animate={{ rotateZ: 360 }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className="absolute inset-0 pointer-events-none border border-white/5 rounded-full scale-125 md:scale-[1.8] border-dashed border-spacing-4" />
