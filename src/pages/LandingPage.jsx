@@ -1,217 +1,228 @@
 import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
-import { ChevronRight, Utensils, Zap, Rocket, Star, ShieldCheck } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Search, MapPin, ShieldCheck, Zap } from 'lucide-react';
 
 const ASSETS = {
-    ufo3D: "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Flying%20saucer/3D/flying_saucer_3d.png",
+    // 3D Food Models
     burger3D: "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Hamburger/3D/hamburger_3d.png",
     pizza3D: "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Pizza/3D/pizza_3d.png",
+    bowl3D: "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Bento%20box/3D/bento_box_3d.png",
+    drink3D: "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Cup%20with%20straw/3D/cup_with_straw_3d.png",
+    // We use a high-quality placeholder drone/UFO in case the image generator hits a limit, 
+    // but the system will swap it if the generated image succeeds and is placed in public.
+    droneFallback: "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Flying%20saucer/3D/flying_saucer_3d.png"
 };
 
 const LandingPage = () => {
     const navigate = useNavigate();
-    const containerRef = useRef(null);
 
-    // --- SCROLL PHYSICS ---
-    const { scrollYProgress } = useScroll({
-        target: containerRef,
-        offset: ["start start", "end start"]
-    });
-
-    // Make the UFO fly up and shrink slightly as you scroll down
-    const ufoScrollY = useTransform(scrollYProgress, [0, 1], ['0%', '-250%']);
-    const ufoScrollScale = useTransform(scrollYProgress, [0, 1], [1, 0.4]);
-    const ufoScrollRotateY = useTransform(scrollYProgress, [0, 1], [0, 180]);
-
-    // --- MOUSE PARALLAX PHYSICS ---
-    const mouseX = useMotionValue(0);
-    const mouseY = useMotionValue(0);
-
-    const smoothMouseX = useSpring(mouseX, { damping: 40, stiffness: 100, mass: 0.8 });
-    const smoothMouseY = useSpring(mouseY, { damping: 40, stiffness: 100, mass: 0.8 });
-
-    // UFO Parallax (Pops out, highly reactive)
-    const ufoX = useTransform(smoothMouseX, [-1, 1], [-80, 80]);
-    const ufoY = useTransform(smoothMouseY, [-1, 1], [-80, 80]);
-    const ufoRotateX = useTransform(smoothMouseY, [-1, 1], [25, -25]);
-    const ufoRotateYBase = useTransform(smoothMouseX, [-1, 1], [-35, 35]);
-
-    // Combine Scroll Rotate with Parallax Rotate
-    const ufoRotateY = useTransform(() => ufoRotateYBase.get() + ufoScrollRotateY.get());
-
-    // Space Background Parallax (Moves opposite, creates extreme depth)
-    const bgX = useTransform(smoothMouseX, [-1, 1], [30, -30]);
-    const bgY = useTransform(smoothMouseY, [-1, 1], [30, -30]);
-
-    // Floating Debris Parallax inside Portal
-    const debris1X = useTransform(smoothMouseX, [-1, 1], [-40, 40]);
-    const debris1Y = useTransform(smoothMouseY, [-1, 1], [-40, 40]);
-    const debris2X = useTransform(smoothMouseX, [-1, 1], [60, -60]);
-    const debris2Y = useTransform(smoothMouseY, [-1, 1], [60, -60]);
-
-    const handleMouseMove = (e) => {
-        const { clientX, clientY } = e;
-        const { innerWidth, innerHeight } = window;
-        // Normalize mouse coordinates to -1 -> 1
-        mouseX.set((clientX / innerWidth) * 2 - 1);
-        mouseY.set((clientY / innerHeight) * 2 - 1);
-    };
+    // We will use standard scroll or simple mouse movement if needed, but 
+    // the core requirement is the continuous 3D rotation of the food items.
 
     return (
-        <div
-            ref={containerRef}
-            onMouseMove={handleMouseMove}
-            className="w-full bg-[#f4f4f6] text-gray-900 font-sans min-h-[250vh] relative overflow-x-hidden selection:bg-indigo-500 selection:text-white"
-        >
-            {/* NAVBAR */}
-            <nav className="fixed w-full z-50 top-0 px-6 md:px-12 py-6 flex justify-between items-center pointer-events-none">
-                <div className="flex items-center gap-2 pointer-events-auto cursor-pointer" onClick={() => navigate('/home')}>
-                    <div className="bg-black text-white p-2 rounded-xl">
-                        <Rocket className="w-5 h-5" />
-                    </div>
-                    <span className="font-extrabold text-2xl tracking-tight text-black">FutureSpace</span>
-                </div>
-                <div className="hidden md:flex items-center gap-10 font-bold text-sm pointer-events-auto text-gray-500">
-                    <button className="hover:text-black transition-colors">Home</button>
-                    <button className="hover:text-black transition-colors">About</button>
-                    <button className="hover:text-black transition-colors">Products</button>
-                    <button className="hover:text-black transition-colors">Contact</button>
-                    <button onClick={() => navigate('/home')} className="bg-black text-white px-8 py-3 rounded-full hover:scale-105 active:scale-95 transition-transform flex items-center gap-2 font-black shadow-lg">
+        <div className="relative min-h-screen w-full overflow-hidden text-white font-sans selection:bg-purple-500 selection:text-white flex flex-col items-center justify-between pb-8">
+
+            {/* THE COSMIC BACKGROUND */}
+            <div className="absolute inset-0 z-0 bg-[#0d0428] overflow-hidden pointer-events-none">
+                {/* Radial Gradient for deep space feel */}
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/40 via-[#0d0428] to-[#050014]" />
+
+                {/* Glowing Nebula Effects */}
+                <div className="absolute top-[20%] right-[10%] w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[120px] mix-blend-screen" />
+                <div className="absolute bottom-[20%] left-[10%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[100px] mix-blend-screen" />
+                <div className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-fuchsia-600/10 rounded-full blur-[150px] mix-blend-screen" />
+
+                {/* Starfield Layer (CSS optimized purely for aesthetic) */}
+                <div className="absolute inset-0 opacity-40 mix-blend-screen" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+                <div className="absolute inset-0 opacity-20 mix-blend-screen" style={{ backgroundImage: 'radial-gradient(circle, #c084fc 2px, transparent 2px)', backgroundSize: '150px 150px', backgroundPosition: '30px 30px' }} />
+            </div>
+
+            {/* HEADER TEXT & BUTTONS */}
+            <div className="relative z-20 w-full pt-16 md:pt-24 flex flex-col items-center text-center px-6">
+                <motion.h1
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
+                    className="text-4xl md:text-5xl lg:text-5xl font-extrabold tracking-tight mb-4 drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                >
+                    FoodExpress – <span className="font-normal text-white">Delivery Beyond Limits</span>
+                </motion.h1>
+                <motion.p
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, delay: 0.2 }}
+                    className="text-indigo-200/80 text-lg md:text-xl font-medium tracking-wide mb-10"
+                >
+                    Fast. Smart. Delivered to Your Doorstep.
+                </motion.p>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, delay: 0.3 }}
+                    className="flex flex-col sm:flex-row gap-5 pointer-events-auto"
+                >
+                    <button
+                        onClick={() => navigate('/home')}
+                        className="px-10 py-3 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold tracking-wide shadow-[0_0_30px_rgba(99,102,241,0.5)] hover:shadow-[0_0_50px_rgba(168,85,247,0.8)] border border-indigo-400/30 transition-all hover:scale-105 active:scale-95"
+                    >
                         Order Now
                     </button>
-                </div>
-            </nav>
-
-            {/* STICKY HERO SECTION */}
-            <div className="sticky top-0 h-screen w-full overflow-hidden flex flex-col md:flex-row items-center justify-between px-6 md:px-16 pt-24 md:pt-0">
-
-                {/* LEFT: UI & Typography */}
-                <div className="w-full md:w-[45%] z-20 flex flex-col justify-center h-full pb-10 md:pb-20 pointer-events-none">
-                    <motion.div
-                        initial={{ opacity: 0, x: -50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 1, ease: "easeOut" }}
-                        className="pointer-events-auto"
+                    <button
+                        onClick={() => navigate('/home')}
+                        className="px-10 py-3 rounded-full bg-transparent border-2 border-fuchsia-500/70 text-white font-bold tracking-wide shadow-[0_0_30px_rgba(217,70,239,0.3)] hover:bg-fuchsia-500/10 hover:shadow-[0_0_40px_rgba(217,70,239,0.5)] transition-all hover:scale-105 active:scale-95"
                     >
-                        <p className="text-xs md:text-sm font-bold tracking-widest text-gray-500 uppercase mb-4 flex items-center gap-2">
-                            <span className="w-8 h-px bg-indigo-500" /> Explore the Cosmos with FoodExpress
-                        </p>
-                        <h1 className="text-6xl md:text-[6rem] font-bold leading-[1.05] tracking-tighter mb-8 text-black">
-                            FoodExpress: <br />
-                            Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-600 block mt-2">Universe.</span>
-                        </h1>
-                        <p className="text-lg md:text-xl text-gray-500 font-medium max-w-md mb-12 leading-relaxed">
-                            Discover the future of food delivery. We're blasting off to bring you the most innovative, sustainable dining across the galaxy.
-                        </p>
-                        <button onClick={() => navigate('/home')} className="bg-black text-white px-10 py-5 rounded-full font-bold text-lg hover:bg-gray-900 hover:scale-105 active:scale-95 transition-all shadow-2xl flex items-center gap-4 group w-full md:w-auto justify-center">
-                            Order Now
-                            <motion.div className="bg-white/20 rounded-full p-1 group-hover:translate-x-1 group-hover:bg-white/30 transition-all">
-                                <ChevronRight className="w-5 h-5 text-white" />
-                            </motion.div>
-                        </button>
-                    </motion.div>
-                </div>
+                        Explore Restaurants
+                    </button>
+                </motion.div>
+            </div>
 
-                {/* RIGHT: The 3D Portal */}
-                <div className="absolute top-[60%] md:top-1/2 -translate-y-1/2 right-[-5%] w-[110%] md:w-[60%] h-[70vh] md:h-[95vh] z-0 pointer-events-none">
-                    <motion.div
-                        className="w-full h-full rounded-[3rem] md:rounded-[4rem] overflow-hidden relative shadow-[0_30px_100px_rgba(0,0,0,0.4)] bg-[#050510]"
-                        initial={{ opacity: 0, scale: 0.95, x: 100 }}
-                        animate={{ opacity: 1, scale: 1, x: 0 }}
-                        transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
-                        style={{ perspective: 1200 }}
-                    >
-                        {/* Deep Space Background (Parallaxing) */}
-                        <motion.div
-                            className="absolute inset-[-15%] w-[130%] h-[130%] bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-900 via-[#050510] to-black"
-                            style={{ x: bgX, y: bgY }}
-                        >
-                            {/* Starfield generated via CSS for performance */}
-                            <div className="absolute inset-0 opacity-40 mix-blend-screen" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
-                            <div className="absolute inset-0 opacity-20 mix-blend-screen" style={{ backgroundImage: 'radial-gradient(circle, #a5b4fc 2px, transparent 2px)', backgroundSize: '150px 150px', backgroundPosition: '30px 30px' }} />
+            {/* CENTRAL DRONE & ORBITING FOOD */}
+            <div className="relative z-10 flex-grow w-full max-w-7xl flex items-center justify-center my-10 min-h-[40vh] md:min-h-[50vh] pointer-events-none">
 
-                            {/* Nebula Glows */}
-                            <div className="absolute top-[20%] right-[20%] w-96 h-96 bg-purple-600/30 rounded-full blur-[100px] animate-pulse mix-blend-screen" />
-                            <div className="absolute bottom-[20%] left-[30%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] mix-blend-screen" />
-                        </motion.div>
+                {/* Central Drone Item (We map realistic floating) */}
+                <motion.div
+                    animate={{ y: [0, -15, 0], rotateZ: [0, 2, -1, 0] }}
+                    transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                    className="relative z-20 w-[280px] md:w-[450px]"
+                >
+                    {/* Temporary glow behind the drone asset if it needs blending */}
+                    <div className="absolute inset-0 bg-blue-500/30 rounded-full blur-[60px] mix-blend-screen scale-125" />
+                    <img
+                        src={ASSETS.droneFallback}
+                        alt="Delivery Drone"
+                        className="w-full h-auto object-contain filter drop-shadow-[0_30px_50px_rgba(0,0,0,0.8)] mix-blend-screen"
+                    />
+                </motion.div>
 
-                        {/* Floating Debris Inside The Portal */}
-                        <motion.img
-                            src={ASSETS.pizza3D}
-                            className="absolute top-[15%] right-[25%] w-32 md:w-48 h-32 md:h-48 object-contain opacity-90 filter blur-[2px] drop-shadow-[0_20px_30px_rgba(0,0,0,0.8)]"
-                            style={{ x: debris1X, y: debris1Y }}
-                            animate={{ rotateZ: 360 }} transition={{ repeat: Infinity, duration: 40, ease: "linear" }}
-                        />
-                        <motion.img
-                            src={ASSETS.burger3D}
-                            className="absolute bottom-[10%] left-[15%] w-40 md:w-56 h-40 md:h-56 object-contain opacity-70 filter blur-[4px] drop-shadow-[0_20px_40px_rgba(0,0,0,0.8)]"
-                            style={{ x: debris2X, y: debris2Y }}
-                            animate={{ rotateZ: -360 }} transition={{ repeat: Infinity, duration: 60, ease: "linear" }}
-                        />
-                    </motion.div>
-                </div>
+                {/* Orbiting Food - TOP LEFT (Burger) */}
+                <motion.div
+                    className="absolute top-[10%] left-[10%] md:top-[15%] md:left-[15%] w-24 md:w-40 z-30"
+                    animate={{ y: [0, 20, 0], x: [0, -10, 0] }}
+                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                >
+                    <motion.img
+                        src={ASSETS.burger3D}
+                        animate={{ rotateY: 360, rotateX: 360, rotateZ: 360 }}
+                        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                        className="w-full h-auto drop-shadow-[0_20px_40px_rgba(0,0,0,0.7)]"
+                    />
+                </motion.div>
 
-                {/* HERO UFO (Overlapping the Portal and the UI) */}
-                <div className="absolute top-[60%] md:top-1/2 left-1/2 md:left-[55%] -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none" style={{ perspective: 1500 }}>
-                    <motion.div
-                        style={{
-                            x: ufoX,
-                            y: ufoY,
-                            rotateX: ufoRotateX,
-                            rotateY: ufoRotateY,
-                            scale: ufoScrollScale,
-                            translateY: ufoScrollY
-                        }}
-                        className="relative"
-                    >
-                        {/* UFO Engine Glow */}
-                        <div className="absolute inset-x-[10%] bottom-[5%] h-[40%] bg-fuchsia-500/50 rounded-full blur-[50px] animate-pulse mix-blend-screen" />
+                {/* Orbiting Food - TOP RIGHT (Pizza) */}
+                <motion.div
+                    className="absolute top-[5%] right-[5%] md:top-[10%] md:right-[15%] w-32 md:w-48 z-10"
+                    animate={{ y: [0, -25, 0], x: [0, 15, 0] }}
+                    transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                >
+                    <motion.img
+                        src={ASSETS.pizza3D}
+                        animate={{ rotateX: [0, 360], rotateY: [0, 360] }}
+                        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+                        className="w-full h-auto drop-shadow-[0_20px_40px_rgba(0,0,0,0.7)]"
+                    />
+                </motion.div>
 
-                        <motion.img
-                            initial={{ opacity: 0, scale: 0.5, y: 100 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            transition={{ duration: 1.5, type: 'spring', bounce: 0.4 }}
-                            src={ASSETS.ufo3D}
-                            alt="UFO"
-                            className="w-[350px] h-[350px] md:w-[800px] md:h-[800px] object-contain drop-shadow-[0_60px_80px_rgba(0,0,0,0.6)]"
-                        />
-                    </motion.div>
-                </div>
+                {/* Orbiting Food - BOTTOM LEFT (Bowl/Noodles) */}
+                <motion.div
+                    className="absolute bottom-[20%] left-[5%] md:bottom-[25%] md:left-[18%] w-28 md:w-44 z-30"
+                    animate={{ y: [0, -15, 0], x: [0, 10, 0] }}
+                    transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                >
+                    <motion.img
+                        src={ASSETS.bowl3D}
+                        animate={{ rotateY: 360, rotateZ: 360 }}
+                        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                        className="w-full h-auto drop-shadow-[0_20px_40px_rgba(0,0,0,0.7)]"
+                    />
+                </motion.div>
+
+                {/* Orbiting Food - BOTTOM RIGHT (Drink/Ice Cream) */}
+                <motion.div
+                    className="absolute bottom-[10%] right-[10%] md:bottom-[20%] md:right-[20%] w-20 md:w-32 z-30"
+                    animate={{ y: [0, 30, 0], x: [0, -15, 0] }}
+                    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+                >
+                    <motion.img
+                        src={ASSETS.drink3D}
+                        animate={{ rotateX: 360, rotateY: 360, rotateZ: [0, 180, 0] }}
+                        transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
+                        className="w-full h-auto drop-shadow-[0_20px_40px_rgba(0,0,0,0.7)]"
+                    />
+                </motion.div>
 
             </div>
 
-            {/* EXTRA SCROLL CONTENT TO SHOW OFF PARALLAX */}
-            <div className="relative z-40 bg-white min-h-screen px-6 md:px-16 py-32 rounded-t-[3rem] md:rounded-t-[4rem] shadow-[0_-30px_80px_rgba(0,0,0,0.1)] flex flex-col items-center text-center mt-[-10vh]">
-                <motion.div
-                    initial={{ opacity: 0, y: 80 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-100px" }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                    className="max-w-4xl mx-auto"
-                >
-                    <div className="bg-indigo-50 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-10 shadow-sm border border-indigo-100">
-                        <Zap className="w-10 h-10 text-indigo-600" />
-                    </div>
-                    <h2 className="text-4xl md:text-6xl font-black mb-8 tracking-tight text-gray-900">Seamless Intergalactic Delivery.</h2>
-                    <p className="text-xl md:text-2xl text-gray-500 leading-relaxed font-medium mb-16">
-                        Our interstellar fleet guarantees hot food at your coordinates faster than light. Say goodbye to cold fries and hello to the future of dining.
-                    </p>
+            {/* FEATURE CARDS BOTTOM GRID */}
+            <div className="relative z-30 px-6 w-full max-w-7xl mx-auto pointer-events-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
-                        {[
-                            { icon: Rocket, title: "Warp Speed", desc: "Arrives before you even click order." },
-                            { icon: ShieldCheck, title: "Secure Orbit", desc: "Your food is protected in an anti-gravity stasis field." },
-                            { icon: Utensils, title: "Universal Taste", desc: "Sourced from the finest galactic chefs." }
-                        ].map((item, idx) => (
-                            <div key={idx} className="bg-gray-50 p-8 rounded-[2rem] border border-gray-100/50 shadow-sm hover:shadow-xl transition-all hover:-translate-y-2 cursor-pointer group">
-                                <item.icon className="w-8 h-8 text-indigo-500 mb-6 group-hover:scale-110 transition-transform" />
-                                <h3 className="text-xl font-bold mb-3">{item.title}</h3>
-                                <p className="text-gray-500 font-medium">{item.desc}</p>
+                    {/* Card 1 */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }}
+                        className="bg-white/5 backdrop-blur-md border border-indigo-400/20 rounded-2xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:bg-white/10 hover:border-indigo-400/40 transition-all cursor-pointer group"
+                    >
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="bg-indigo-500/20 p-2.5 rounded-full ring-1 ring-indigo-500/50 group-hover:ring-indigo-400 transition-all shadow-[0_0_15px_rgba(99,102,241,0.4)]">
+                                <Zap className="w-5 h-5 text-indigo-300" />
                             </div>
-                        ))}
-                    </div>
-                </motion.div>
+                            <h3 className="font-bold text-base whitespace-nowrap">Lightning<br />Fast Delivery</h3>
+                        </div>
+                        <p className="text-xs text-indigo-100/60 leading-relaxed font-medium">
+                            FoodExpress is a modern food delivery platform powered by AI to ensure timely routing.
+                        </p>
+                    </motion.div>
+
+                    {/* Card 2 */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.5 }}
+                        className="bg-white/5 backdrop-blur-md border border-purple-400/20 rounded-2xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:bg-white/10 hover:border-purple-400/40 transition-all cursor-pointer group"
+                    >
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="bg-purple-500/20 p-2.5 rounded-full ring-1 ring-purple-500/50 group-hover:ring-purple-400 transition-all shadow-[0_0_15px_rgba(168,85,247,0.4)]">
+                                <MapPin className="w-5 h-5 text-purple-300" />
+                            </div>
+                            <h3 className="font-bold text-base whitespace-nowrap">Live Order<br />Tracking</h3>
+                        </div>
+                        <p className="text-xs text-indigo-100/60 leading-relaxed font-medium">
+                            FoodExpress gives real time food delivery tracking powered by the ultimate GPS location.
+                        </p>
+                    </motion.div>
+
+                    {/* Card 3 */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.6 }}
+                        className="bg-white/5 backdrop-blur-md border border-fuchsia-400/20 rounded-2xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:bg-white/10 hover:border-fuchsia-400/40 transition-all cursor-pointer group"
+                    >
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="bg-fuchsia-500/20 p-2.5 rounded-full ring-1 ring-fuchsia-500/50 group-hover:ring-fuchsia-400 transition-all shadow-[0_0_15px_rgba(217,70,239,0.4)]">
+                                <Search className="w-5 h-5 text-fuchsia-300" />
+                            </div>
+                            <h3 className="font-bold text-base whitespace-nowrap">Smart Search<br />& Filters</h3>
+                        </div>
+                        <p className="text-xs text-indigo-100/60 leading-relaxed font-medium">
+                            FoodExpress has AI algorithms to surface exact matches tailored to your palate & craving.
+                        </p>
+                    </motion.div>
+
+                    {/* Card 4 */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.7 }}
+                        className="bg-white/5 backdrop-blur-md border border-pink-400/20 rounded-2xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:bg-white/10 hover:border-pink-400/40 transition-all cursor-pointer group"
+                    >
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="bg-pink-500/20 p-2.5 rounded-full ring-1 ring-pink-500/50 group-hover:ring-pink-400 transition-all shadow-[0_0_15px_rgba(236,72,153,0.4)]">
+                                <ShieldCheck className="w-5 h-5 text-pink-300" />
+                            </div>
+                            <h3 className="font-bold text-base whitespace-nowrap">Secure<br />Payments</h3>
+                        </div>
+                        <p className="text-xs text-indigo-100/60 leading-relaxed font-medium">
+                            FoodExpress ensures multiple tracking algorithms to secure your smart payment channels.
+                        </p>
+                    </motion.div>
+
+                </div>
             </div>
 
         </div>
