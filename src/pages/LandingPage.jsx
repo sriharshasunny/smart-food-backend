@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Utensils, ShieldCheck, Zap, Rocket, Star, MapPin, Truck, Smartphone, Clock } from 'lucide-react';
@@ -9,13 +9,13 @@ const ASSETS = {
     pizza3D: "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Pizza/3D/pizza_3d.png",
     taco3D: "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Taco/3D/taco_3d.png",
     fries3D: "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/French%20fries/3D/french_fries_3d.png",
-    ufo3D: "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Flying%20saucer/3D/flying_saucer_3d.png"
+    bowl3D: "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Bento%20box/3D/bento_box_3d.png",
+    ufo3D: "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Flying%20saucer/3D/flying_saucer_3d.png",
+    cityBg: "/citybg.png" // Deep Space / Cybercity background
 };
 
 const LandingPage = () => {
     const navigate = useNavigate();
-    const canvasRef = useRef(null);
-    const scrollRef = useRef(null);
 
     // --- CURSOR TRACKING (FRAMER MOTION) ---
     // Raw Mouse Values (-1 to 1)
@@ -27,7 +27,7 @@ const LandingPage = () => {
     const smoothMouseX = useSpring(mouseX, springConfig);
     const smoothMouseY = useSpring(mouseY, springConfig);
 
-    // 3D Rotations mapped from mouse
+    // 3D Rotations mapped from mouse for the central "Sun"
     const rotateX = useTransform(smoothMouseY, [-1, 1], [30, -30]); // Look up/down
     const rotateY = useTransform(smoothMouseX, [-1, 1], [-30, 30]); // Look left/right
 
@@ -37,16 +37,12 @@ const LandingPage = () => {
     const smoothUfoX = useSpring(ufoX, { damping: 40, stiffness: 100, mass: 1.5 }); // Heavy, "floaty" chase
     const smoothUfoY = useSpring(ufoY, { damping: 40, stiffness: 100, mass: 1.5 });
 
-    // UFO Tilt Physics mapped from velocity (difference between smooth and raw target)
-    // To fake velocity tilt: if mouse is far right of UFO, UFO tilts right to 'accelerate'
+    // UFO Tilt Physics mapped from velocity
     const ufoRotX = useTransform(smoothUfoY, v => (v - (typeof window !== "undefined" ? window.innerHeight / 2 : 0)) * -0.05);
     const ufoRotZ = useTransform(smoothUfoX, v => {
-        // Find distance from true mouse
-        // We cheat by using raw mouseX to guess velocity direction
         const targetX = (mouseX.get() + 1) / 2 * (typeof window !== "undefined" ? window.innerWidth : 1000);
         return (targetX - v) * 0.08;
     });
-
 
     // UFO State
     const [ufoState, setUfoState] = useState('IDLE'); // IDLE, WARPING, RESPAWNING
@@ -58,427 +54,277 @@ const LandingPage = () => {
     const foodKeys = [ASSETS.burger3D, ASSETS.pizza3D, ASSETS.taco3D, ASSETS.fries3D];
 
     useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentFood(prev => {
-                const currentIndex = foodKeys.indexOf(prev);
-                return foodKeys[(currentIndex + 1) % foodKeys.length];
-            });
-        }, 4000);
-        return () => clearInterval(interval);
-    }, []);
+        let isMobile = window.innerWidth < 768;
 
-    // UFO Warp Logic
-    useEffect(() => {
-        if (ufoState === 'WARPING') {
-            const centerX = window.innerWidth * (window.innerWidth < 768 ? 0.5 : 0.75);
-            const centerY = window.innerHeight * (window.innerWidth < 768 ? 0.3 : 0.5);
+        const handleMouseMove = (e) => {
+            const { clientX, clientY } = e;
+            const { innerWidth, innerHeight } = window;
 
-            // Suck into the "Sun" (the 3D food model)
-            ufoX.set(centerX);
-            ufoY.set(centerY);
-            ufoScale.set(0); // Shrink to nothing
-            ufoWarpSpin.set(1080); // Spin wildly
+            // Normalize mouse coordinates to -1 -> 1
+            mouseX.set((clientX / innerWidth) * 2 - 1);
+            mouseY.set((clientY / innerHeight) * 2 - 1);
 
-            const warpTimer = setTimeout(() => {
-                setUfoState('RESPAWNING');
-            }, 1200);
-            return () => clearTimeout(warpTimer);
-        } else if (ufoState === 'RESPAWNING') {
-            // Teleport off-screen and reset
-            ufoX.jump(-200);
-            ufoY.jump(window.innerHeight / 2);
-            ufoScale.jump(0);
-            ufoWarpSpin.jump(0);
-
-            const respawnTimer = setTimeout(() => {
-                setUfoState('IDLE');
-                ufoScale.set(1); // Grow back to normal
-            }, 500);
-            return () => clearTimeout(respawnTimer);
-        }
-    }, [ufoState, ufoX, ufoY, ufoScale, ufoWarpSpin]);
-
-    // Global Mouse Tracker Handler
-    const handleMouseMove = (e) => {
-        const { clientX, clientY } = e;
-        const { innerWidth, innerHeight } = window;
-        // Normalize to -1 to 1
-        mouseX.set((clientX / innerWidth) * 2 - 1);
-        mouseY.set((clientY / innerHeight) * 2 - 1);
-
-        if (ufoState === 'IDLE') {
-            // Update UFO Target slightly offset from cursor
-            ufoX.set(clientX + 40);
-            ufoY.set(clientY - 40);
-        }
-    };
-
-    // --- ULTRA-FAST LITE CANVAS ENGINE (ONLY Stars & Dust) ---
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        // Safety: Ensure Context
-        const ctx = canvas.getContext('2d', { alpha: true });
-        if (!ctx) return;
-
-        let animationFrameId;
-
-        // Assets
-        let width = window.innerWidth;
-        let height = window.innerHeight;
-        let isMobile = width < 768;
-
-        // State Targets
-        let centerX = width * 0.75;
-        let centerY = height * 0.5;
-        let scale = Math.min(width, height) * 0.0013;
-
-        // Removed UFO state from Canvas -> Handled perfectly by DOM React Physics
-
-        const resize = () => {
-            if (!canvas) return;
-            width = window.innerWidth;
-            height = window.innerHeight;
-
-            // OPTIMIZATION: Max Speed on Mobile (Cap DPR at 1.0)
-            const mobileView = width < 768;
-            const dpr = mobileView ? 1.0 : Math.min(window.devicePixelRatio || 1, 1.5);
-
-            canvas.width = width * dpr;
-            canvas.height = height * dpr;
-            // Force CSS dimensions
-            canvas.style.width = width + 'px';
-            canvas.style.height = height + 'px';
-
-            ctx.scale(dpr, dpr);
-
-            if (width >= 768) {
-                isMobile = false;
-            } else {
-                isMobile = true;
+            // If UFO is IDLE, strictly update its raw tracking position
+            if (ufoState === 'IDLE') {
+                ufoX.set(clientX);
+                ufoY.set(clientY);
             }
         };
 
-
-        // Mobile Optimization: Significantly reduce counts
-        const starCount = isMobile ? 15 : 40;
-        const stars = Array.from({ length: starCount }, () => ({
-            x: Math.random() * width,
-            y: Math.random() * height,
-            z: Math.random() * 2 + 0.5, // Deeper Z range
-            size: Math.random() * 1.5 + 0.5,
-            baseOpacity: Math.random() * 0.6 + 0.4,
-            phase: Math.random() * Math.PI * 2,
-            speed: 50 + Math.random() * 80 // MUCHO FASTER
-        }));
-
-        // Entities: Shooting Stars
-        let shootingStars = [];
-        const spawnShootingStar = () => {
-            if (isMobile && Math.random() > 0.3) return; // Less frequent on mobile
-            shootingStars.push({
-                x: Math.random() * width,
-                y: -50,
-                length: Math.random() * 80 + 40,
-                speed: Math.random() * 20 + 20,
-                angle: (Math.PI / 4) + (Math.random() * 0.2 - 0.1), // Angled down-right
-                opacity: 1,
-                life: 1
-            });
+        const handleTouchMove = (e) => {
+            const touch = e.touches[0];
+            handleMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
         };
 
-        // Entities: Space Dust
-        const dustCount = isMobile ? 15 : 40;
-        const dust = Array.from({ length: dustCount }, () => ({
-            x: Math.random() * width,
-            y: Math.random() * height,
-            size: Math.random() * 2 + 1,
-            vx: (Math.random() - 0.5) * 0.5,
-            vy: (Math.random() - 0.5) * 0.5,
-            opacity: Math.random() * 0.3 + 0.1
-        }));
-
-        // All Canvas Food Removed.
-
-        // Timing
-        let lastTime = 0;
-        let coreTimer = 0;
-
-        const loop = (timestamp) => {
-            if (!lastTime) lastTime = timestamp;
-            const dt = Math.max(0.01, Math.min((timestamp - lastTime) / 1000, 0.1));
-            lastTime = timestamp;
-            coreTimer += dt;
-
-            // Update Shooting Stars
-            if (Math.random() < (isMobile ? 0.005 : 0.01)) spawnShootingStar();
-            shootingStars.forEach((star, index) => {
-                star.x += Math.cos(star.angle) * star.speed * dt * 50;
-                star.y += Math.sin(star.angle) * star.speed * dt * 50;
-                star.life -= dt * 0.8;
-                if (star.life <= 0 || star.y > height + 100 || star.x > width + 100) {
-                    shootingStars.splice(index, 1);
-                }
-            });
-
-            // Update Dust
-            dust.forEach(d => {
-                d.x += d.vx * dt * 50;
-                d.y += d.vy * dt * 50;
-                if (d.x < 0) d.x = width; if (d.x > width) d.x = 0;
-                if (d.y < 0) d.y = height; if (d.y > height) d.y = 0;
-            });
-
-            // RENDER LITE ENGINE
-            ctx.fillStyle = '#020205'; ctx.fillRect(0, 0, width, height);
-
-            // Draw Stars
-            stars.forEach(star => {
-                ctx.fillStyle = `rgba(255, 255, 255, ${(Math.sin(star.phase + coreTimer) + 1) * 0.5 * star.baseOpacity})`;
-                ctx.beginPath(); ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2); ctx.fill();
-            });
-
-            // Draw Parallax Dust
-            dust.forEach(d => {
-                ctx.fillStyle = `rgba(200, 200, 255, ${d.opacity})`;
-                ctx.beginPath(); ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2); ctx.fill();
-            });
-
-            animationFrameId = requestAnimationFrame(loop);
-        };
-        // Resize & Start
-        let resizeTimeout;
-        const debouncedResize = () => { clearTimeout(resizeTimeout); resizeTimeout = setTimeout(resize, 100); };
-        window.addEventListener('resize', debouncedResize);
-
-        // Init
-        resize();
-        requestAnimationFrame(loop);
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('touchmove', handleTouchMove, { passive: true });
 
         return () => {
-            window.removeEventListener('resize', debouncedResize);
-            cancelAnimationFrame(animationFrameId);
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('touchmove', handleTouchMove);
         };
-    }, []);
+    }, [mouseX, mouseY, ufoX, ufoY, ufoState]);
 
-    const scrollToContent = () => {
-        document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
+    // Handle UFO WARP State Machine
+    useEffect(() => {
+        if (ufoState === 'WARPING') {
+            // Target the center of the screen ("The Sun")
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+
+            ufoX.set(centerX);
+            ufoY.set(centerY);
+            ufoScale.set(0); // Shrink to zero like entering a black hole
+            ufoWarpSpin.set(1080); // Massive spiral rotation
+
+            const respawnTimer = setTimeout(() => {
+                setUfoState('RESPAWNING');
+            }, 1200); // Wait for the dive to finish
+
+            return () => clearTimeout(respawnTimer);
+        }
+
+        if (ufoState === 'RESPAWNING') {
+            // Instantly move UFO way off screen
+            ufoX.jump(-500);
+            ufoY.jump(-500);
+            ufoWarpSpin.jump(0);
+
+            const idleTimer = setTimeout(() => {
+                setUfoState('IDLE');
+                ufoScale.set(1); // Resume normal size over time
+            }, 100);
+
+            return () => clearTimeout(idleTimer);
+        }
+    }, [ufoState, ufoX, ufoY, ufoScale, ufoWarpSpin]);
+
+    const handleFoodClick = () => {
+        if (ufoState === 'IDLE') {
+            // Trigger Warp effect
+            setUfoState('WARPING');
+
+            // Cycle the Food Item
+            const currentIndex = foodKeys.indexOf(currentFood);
+            const nextIndex = (currentIndex + 1) % foodKeys.length;
+            setCurrentFood(foodKeys[nextIndex]);
+        }
     };
 
-    const ScrollReveal = ({ children, delay = 0 }) => (
-        <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.5, delay, ease: "easeOut" }}
-        >
-            {children}
-        </motion.div>
-    );
-
     return (
-        <div onMouseMove={handleMouseMove} ref={scrollRef} className="min-h-screen text-white font-sans overflow-x-hidden relative bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950 via-[#050510] to-black selection:bg-orange-500 selection:text-white" style={{ perspective: '1200px' }}>
+        <div className="relative min-h-screen bg-black overflow-hidden font-sans selection:bg-indigo-500 selection:text-white">
 
-            {/* CANVASES */}
-            <canvas ref={canvasRef} className="fixed inset-0 z-0 pointer-events-none" />
-
-            {/* --- DOM BASED 3D UFO CHASER --- */}
-            <motion.div
-                className="fixed top-0 left-0 w-32 h-32 z-50 pointer-events-none drop-shadow-[0_20px_40px_rgba(0,255,100,0.5)] flex items-center justify-center"
-                style={{
-                    x: smoothUfoX,
-                    y: smoothUfoY,
-                    translateX: '-50%',
-                    translateY: '-50%',
-                    rotateX: ufoRotX,
-                    // Combine flying tilt with warp death-spiral
-                    rotateZ: useTransform(() => ufoRotZ.get() + ufoWarpSpin.get()),
-                    scale: ufoScale,
-                    opacity: useTransform(ufoScale, [0, 1], [0, 1])
-                }}
-            >
-                <img src={ASSETS.ufo3D} alt="UFO" className="w-full h-full object-contain filter drop-shadow-[0_0_20px_rgba(0,255,200,0.4)]" />
-                <motion.div
-                    animate={{ opacity: [0.2, 0.8, 0.2], scale: [0.8, 1.2, 0.8] }}
-                    transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-                    className="absolute bottom-[-10px] w-12 h-12 bg-green-400 rounded-full blur-[20px] mix-blend-screen"
+            {/* THE CYBERPUNK CITYSCAPE BACKGROUND */}
+            <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                {/* Generated City Background Image */}
+                <div
+                    className="absolute inset-0 bg-cover bg-bottom opacity-70 filter contrast-[1.2] saturate-[1.5] mix-blend-screen"
+                    style={{ backgroundImage: `url(${ASSETS.cityBg})` }}
                 />
-            </motion.div>
+
+                {/* Deep Space Overlay Gradient */}
+                <div className="absolute inset-0 bg-gradient-to-b from-[#0d0428]/90 via-transparent to-[#050014]/90" />
+
+                {/* Glowing Nebula Effects */}
+                <div className="absolute top-[20%] right-[10%] w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[120px] mix-blend-screen" />
+                <div className="absolute bottom-[20%] left-[10%] w-[500px] h-[500px] bg-cyan-600/10 rounded-full blur-[100px] mix-blend-screen" />
+
+                {/* Starfield Layer */}
+                <div className="absolute inset-0 opacity-40 mix-blend-screen" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+                <div className="absolute inset-0 opacity-20 mix-blend-screen" style={{ backgroundImage: 'radial-gradient(circle, #c084fc 2px, transparent 2px)', backgroundSize: '150px 150px', backgroundPosition: '30px 30px' }} />
+            </div>
 
             {/* NAVBAR */}
-            <nav className="fixed w-full z-50 top-6 px-4 pointer-events-none">
-                <div className="max-w-fit mx-auto pointer-events-auto">
-                    <motion.div layout transition={{ duration: 0.3, ease: "easeInOut" }} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-full px-8 py-3 flex items-center gap-8 shadow-2xl">
-                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/home')}>
-                            <Rocket className="w-5 h-5 text-orange-500" />
-                            <span className="font-black text-lg tracking-tight">FoodVerse</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <button onClick={() => navigate('/login')} className="px-5 py-2 text-xs font-bold hover:text-white text-gray-300 transition-colors">
-                                Login
-                            </button>
-                            <button onClick={() => navigate('/signup')} className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-rose-600 text-white text-xs font-black rounded-full hover:scale-105 transition-transform shadow-lg">
-                                SIGN UP
-                            </button>
-                        </div>
-                    </motion.div>
+            <nav className="fixed w-full z-50 top-0 px-6 py-4 flex justify-between items-center bg-black/5 backdrop-blur-sm border-b border-white/5 pointer-events-none">
+                <div className="flex items-center gap-2 pointer-events-auto cursor-pointer" onClick={() => navigate('/home')}>
+                    <div className="bg-gradient-to-tr from-indigo-500 to-purple-500 text-white p-2 rounded-xl shadow-lg shadow-indigo-500/20">
+                        <Rocket className="w-5 h-5" />
+                    </div>
+                    <span className="font-extrabold text-2xl tracking-tight text-white drop-shadow-md">FoodExpress</span>
                 </div>
-            </nav >
+                <div className="hidden md:flex items-center gap-6 pointer-events-auto">
+                    <button onClick={() => navigate('/login')} className="text-gray-300 font-medium hover:text-white transition-colors">Sign In</button>
+                    <button onClick={() => navigate('/Signup')} className="bg-white text-black px-6 py-2.5 rounded-full font-bold hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-white/10">Get Started</button>
+                </div>
+            </nav>
 
-            {/* Hero Section */}
-            <main className="relative z-10 w-full px-6 flex flex-col md:flex-row items-center justify-center min-h-[90vh] md:min-h-screen max-w-7xl mx-auto pt-20 md:pt-0">
+            <div className="relative z-10 max-w-[1400px] mx-auto px-6 pt-32 h-screen flex flex-col md:flex-row items-center pointer-events-none">
 
-                <div className="w-full md:w-1/2 flex flex-col items-start space-y-8 pr-0 md:pr-12 text-left relative z-10 pointer-events-none mb-12 md:mb-0 order-2 md:order-1 mt-10 md:mt-0">
-                    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }} className="w-full">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.05] border border-white/10 backdrop-blur-md mb-6 relative overflow-hidden group shadow-[0_0_20px_rgba(255,255,255,0.05)] pointer-events-auto">
-                            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                            <Rocket className="w-4 h-4 text-orange-400" />
-                            <span className="text-xs font-bold tracking-widest text-orange-400 uppercase">Foodverse Protocol v3.0</span>
+                {/* LEFT HERO TEXT */}
+                <div className="w-full md:w-1/2 flex flex-col items-center md:items-start text-center md:text-left z-30 pointer-events-none order-2 md:order-1 mt-10 md:mt-0">
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        className="pointer-events-auto"
+                    >
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-6 shadow-xl">
+                            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                            <span className="text-sm font-semibold tracking-wide text-gray-200">The Universe's Best Cravings</span>
                         </div>
-                        <h1 className="text-5xl md:text-7xl font-black text-white leading-[1.1] mb-6 tracking-tight drop-shadow-2xl font-sans">
-                            Taste the <br className="hidden md:block" />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-rose-500 to-purple-500 relative inline-block">
-                                Future
-                                <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 2, repeat: Infinity }} className="absolute -inset-2 bg-gradient-to-r from-orange-500 to-purple-500 opacity-20 blur-2xl -z-10 rounded-full" />
-                            </span>
+                        <h1 className="text-5xl md:text-7xl lg:text-[5rem] font-extrabold leading-[1.1] mb-6 tracking-tight text-white drop-shadow-2xl">
+                            Taste The <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">Future.</span>
                         </h1>
-                        <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-lg font-medium leading-relaxed drop-shadow-md">
-                            Experience highly immersive, hyper-speed delivery directly to your coordinates. We are redefining intergalactic dining.
+                        <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-lg font-medium leading-relaxed">
+                            AI-powered, ultra-fast delivery. Experience zero-gravity transit that brings your food piping hot across the galaxy.
                         </p>
-                        <div className="flex flex-col sm:flex-row gap-5 pointer-events-auto">
-                            <button onClick={() => navigate('/home')} className="px-8 py-4.5 bg-gradient-to-r from-orange-500 via-rose-500 to-purple-600 rounded-2xl text-white font-black hover:scale-105 active:scale-95 transition-all text-lg shadow-[0_0_30px_rgba(249,115,22,0.4)] hover:shadow-[0_0_50px_rgba(249,115,22,0.6)] flex items-center justify-center gap-3 overflow-hidden group relative">
-                                <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300" />
-                                <span className="relative z-10 flex items-center gap-2">Explore Menu <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></span>
+
+                        <div className="flex flex-col sm:flex-row gap-4 items-center md:items-start w-full md:w-auto">
+                            <button
+                                onClick={() => navigate('/home')}
+                                className="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(99,102,241,0.4)] flex items-center justify-center gap-2 group"
+                            >
+                                Order Now
+                                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                            </button>
+                            <button
+                                onClick={() => navigate('/home')}
+                                className="w-full sm:w-auto bg-white/5 border border-white/10 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-white/10 hover:scale-105 active:scale-95 transition-all backdrop-blur-md flex items-center justify-center gap-2"
+                            >
+                                <Search className="w-5 h-5" /> Explore Options
                             </button>
                         </div>
                     </motion.div>
                 </div>
 
-                {/* --- DOM BASED 3D HERO FOOD --- */}
-                <div className="w-full md:w-1/2 flex items-center justify-center relative min-h-[40vh] md:min-h-0 order-1 md:order-2 mt-20 md:mt-0 pointer-events-none" style={{ perspective: "1500px" }}>
+                {/* RIGHT DOM-BASED 3D HERO FOOD (The "Sun") */}
+                <div className="w-full md:w-1/2 flex items-center justify-center relative min-h-[40vh] md:min-h-0 order-1 md:order-2 mt-20 md:mt-0 pointer-events-auto" style={{ perspective: "1500px" }}>
+
+                    {/* The "Sun" Aura behind the food */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-yellow-500/20 rounded-full blur-[80px] mix-blend-screen pointer-events-none" />
+
+                    {/* Orbiting Planets (Pizza, Fries, Bowl) continuously spinning around the Sun */}
+                    <div className="absolute w-full h-full pointer-events-none" style={{ perspective: '1000px' }}>
+                        {/* Pizza Orbit */}
+                        <motion.div className="absolute top-1/2 left-1/2 w-2 h-2 z-20" animate={{ rotateZ: 360 }} transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}>
+                            <div className="absolute -left-[160px] md:-left-[240px] -top-[50px]">
+                                <motion.img src={ASSETS.pizza3D} className="w-20 md:w-28 drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)] filter contrast-[1.1]" animate={{ rotateZ: -360, rotateY: 360 }} transition={{ duration: 15, repeat: Infinity, ease: 'linear' }} />
+                            </div>
+                        </motion.div>
+
+                        {/* Fries Orbit */}
+                        <motion.div className="absolute top-1/2 left-1/2 w-2 h-2 z-20" animate={{ rotateZ: -360 }} transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}>
+                            <div className="absolute left-[160px] md:left-[220px] top-[60px]">
+                                <motion.img src={ASSETS.fries3D} className="w-16 md:w-24 drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)] filter contrast-[1.1]" animate={{ rotateZ: 360, rotateX: 360 }} transition={{ duration: 20, repeat: Infinity, ease: 'linear' }} />
+                            </div>
+                        </motion.div>
+
+                        {/* Bowl Orbit */}
+                        <motion.div className="absolute top-1/2 left-1/2 w-2 h-2 z-20" animate={{ rotateZ: 360 }} transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}>
+                            <div className="absolute -left-[60px] top-[180px] md:top-[260px]">
+                                <motion.img src={ASSETS.bowl3D} className="w-24 md:w-32 drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)] filter contrast-[1.1]" animate={{ rotateZ: -360, rotateY: -360 }} transition={{ duration: 22, repeat: Infinity, ease: 'linear' }} />
+                            </div>
+                        </motion.div>
+                    </div>
+
+                    {/* Central Interactive Food Model */}
                     <motion.div
                         style={{ rotateX, rotateY }}
-                        className="relative z-20 pointer-events-auto cursor-pointer"
-                        onClick={() => {
-                            if (ufoState !== 'WARPING') {
-                                setUfoState('WARPING');
-                            }
-                        }}
+                        className="relative z-30 cursor-pointer group"
+                        onClick={handleFoodClick}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                     >
-                        {/* Huge glow behind the food */}
-                        <div className="absolute inset-0 bg-gradient-to-tr from-orange-500 to-purple-600 rounded-full blur-[100px] opacity-40 mix-blend-screen scale-150 animate-pulse" />
-
                         <AnimatePresence mode="wait">
                             <motion.img
                                 key={currentFood}
-                                initial={{ opacity: 0, scale: 0.5, rotateZ: -20 }}
-                                animate={{ opacity: 1, scale: 1, rotateZ: 0 }}
-                                exit={{ opacity: 0, scale: 1.5, rotateZ: 20 }}
-                                transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
+                                initial={{ opacity: 0, scale: 0.5, rotateY: -90 }}
+                                animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                                exit={{ opacity: 0, scale: 0.5, rotateY: 90 }}
+                                transition={{ type: "spring", stiffness: 200, damping: 20 }}
                                 src={currentFood}
                                 alt="3D Food"
-                                className="w-[300px] h-[300px] md:w-[600px] md:h-[600px] object-contain drop-shadow-[0_40px_60px_rgba(0,0,0,0.8)]"
+                                className="w-[280px] h-[280px] md:w-[450px] md:h-[450px] object-contain drop-shadow-[0_40px_80px_rgba(0,0,0,0.8)] filter contrast-[1.1] saturate-[1.2]"
+                                draggable="false"
                             />
                         </AnimatePresence>
 
-                        {/* Orbiting Elements (DOM Parallax) */}
-                        <motion.div animate={{ rotateZ: 360 }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className="absolute inset-0 pointer-events-none border border-white/5 rounded-full scale-125 md:scale-[1.8] border-dashed border-spacing-4" />
-                        <motion.div animate={{ rotateZ: -360 }} transition={{ duration: 30, repeat: Infinity, ease: "linear" }} className="absolute inset-0 pointer-events-none border border-orange-500/10 rounded-full scale-150 md:scale-[2.4]" />
+                        {/* Click Hint */}
+                        <motion.div
+                            className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-xl border border-white/20 px-4 py-1.5 rounded-full text-white text-xs font-bold tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap"
+                            animate={{ y: [0, -5, 0] }}
+                            transition={{ repeat: Infinity, duration: 2 }}
+                        >
+                            Click to Warp
+                        </motion.div>
                     </motion.div>
+
                 </div>
-
-            </main>
-
-            {/* SCROLLING INFO */}
-            <div id="about" className="relative w-full bg-black/60 pt-20 pb-32 border-t border-white/5 pointer-events-auto">
-                <section className="px-6 max-w-7xl mx-auto space-y-32">
-                    {/* FEATURES GRID */}
-                    <div>
-                        <ScrollReveal>
-                            <div className="text-center mb-16">
-                                <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">Galactic Capabilities</h2>
-                                <p className="text-gray-400 max-w-2xl mx-auto">Engineered for the modern space traveler.</p>
-                            </div>
-                        </ScrollReveal>
-                        <div className="grid md:grid-cols-3 gap-6">
-                            {[
-                                { title: "Hyper-Local", desc: "Precision landing at your pod.", icon: <MapPin className="w-8 h-8 text-rose-500" /> },
-                                { title: "Warp Speed", desc: "Hot food, defying physics.", icon: <Zap className="w-8 h-8 text-yellow-400" /> },
-                                { title: "Live Telemetry", desc: "Real-time pilot tracking.", icon: <Truck className="w-8 h-8 text-blue-400" /> },
-                                { title: "Quantum Pay", desc: "Encrypted & instant.", icon: <ShieldCheck className="w-8 h-8 text-green-400" /> },
-                                { title: "Cosmic Menu", desc: "Dishes from 500+ sectors.", icon: <Utensils className="w-8 h-8 text-purple-400" /> },
-                                { title: "Command Center", desc: "Full control via app.", icon: <Smartphone className="w-8 h-8 text-orange-400" /> }
-                            ].map((item, i) => (
-                                <ScrollReveal key={i} delay={i * 0.05}>
-                                    <div className="group p-8 rounded-[2rem] bg-gradient-to-b from-white/[0.08] to-transparent backdrop-blur-2xl border border-white/10 hover:border-orange-500/50 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_0_40px_rgba(249,115,22,0.15)] text-center h-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] relative overflow-hidden">
-                                        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                        <div className="relative z-10">
-                                            <div className="mb-6 inline-flex items-center justify-center opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 p-4 bg-white/5 rounded-2xl shadow-lg ring-1 ring-white/20 group-hover:ring-orange-500/50">{item.icon}</div>
-                                            <h3 className="text-xl font-bold mb-3 text-white/95 tracking-wide">{item.title}</h3>
-                                            <p className="text-gray-400 text-sm font-medium leading-relaxed group-hover:text-gray-300 transition-colors">{item.desc}</p>
-                                        </div>
-                                    </div>
-                                </ScrollReveal>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* STATS */}
-                    <ScrollReveal>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-12 border-y border-white/5 bg-white/[0.02] rounded-[3rem] px-8">
-                            {[
-                                { label: "Active Pilots", val: "12,000+" },
-                                { label: "Sectors Served", val: "540" },
-                                { label: "Avg Delivery", val: "12 min" },
-                                { label: "Happy Aliens", val: "2.5 M+" }
-                            ].map((stat, i) => (
-                                <div key={i} className="text-center">
-                                    <div className="text-3xl md:text-4xl font-black text-white mb-1">{stat.val}</div>
-                                    <div className="text-xs uppercase tracking-widest text-gray-500 font-bold">{stat.label}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </ScrollReveal>
-
-                    {/* WHY US */}
-                    <div className="grid md:grid-cols-2 gap-16 items-center mt-20">
-                        <ScrollReveal>
-                            <div className="space-y-6">
-                                <div className="inline-block px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-wider mb-2">Our Mission</div>
-                                <h2 className="text-4xl md:text-5xl font-black leading-tight">Food that travels<br />across dimensions.</h2>
-                                <p className="text-gray-400 text-lg leading-relaxed">
-                                    We don't just deliver food; we bridge culinary worlds. From the spicy nebulas of Sector 7 to the comfort synthesisers of Earth, we bring it all to your doorstep.
-                                </p>
-                                <ul className="space-y-4 pt-4">
-                                    {[
-                                        "Freshness locked in stasis fields",
-                                        "Zero-G prepared delicacies",
-                                        "Drone pilots with elite certification"
-                                    ].map((pt, i) => (
-                                        <li key={i} className="flex items-center gap-3 text-gray-300 font-medium">
-                                            <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center"><Star className="w-3 h-3 text-green-400" /></div>
-                                            {pt}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </ScrollReveal>
-                        <ScrollReveal delay={0.2}>
-                            <div className="relative aspect-square rounded-[3rem] overflow-hidden border border-white/10 bg-gradient-to-br from-orange-500/10 to-purple-600/10 flex items-center justify-center group">
-                                <div className="absolute inset-0 bg-black/40" />
-                                <div className="relative text-center p-8 bg-black/30 backdrop-blur-xl rounded-3xl border border-white/10 max-w-xs transform group-hover:-translate-y-2 transition-transform">
-                                    <Clock className="w-10 h-10 text-orange-400 mx-auto mb-4" />
-                                    <h3 className="text-2xl font-bold mb-2">24/7 Service</h3>
-                                    <p className="text-sm text-gray-300">Our drones never sleep. Late night cravings or early morning fuel, we are online.</p>
-                                </div>
-                            </div>
-                        </ScrollReveal>
-                    </div>
-                </section>
             </div>
+
+            {/* DOM-BASED CHASER UFO */}
+            {/* 
+                This lives at the absolute root and follows the cursor via Framer Motion useSpring.
+                It replaces the old canvas UFO entirely, bringing perfect quality and smooth physics.
+            */}
+            <motion.div
+                className="fixed top-0 left-0 w-[120px] md:w-[180px] h-auto pointer-events-none z-[100]"
+                style={{
+                    x: smoothUfoX,
+                    y: smoothUfoY,
+                    rotateX: ufoRotX,
+                    rotateZ: ufoState === 'WARPING' ? ufoWarpSpin : ufoRotZ,
+                    scale: ufoScale,
+                    // Offset by half width/height so mouse is completely centered on the UFO
+                    translateX: "-50%",
+                    translateY: "-50%"
+                }}
+            >
+                {/* Engine Glow */}
+                <div className="absolute inset-x-[20%] bottom-[10%] h-[30%] bg-fuchsia-500/60 rounded-full blur-[15px] animate-pulse mix-blend-screen" />
+
+                <img
+                    src={ASSETS.ufo3D}
+                    alt="Chaser UFO"
+                    className="w-full h-full object-contain filter drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)]"
+                />
+
+                {/* Fun Tooltip connected to the UFO */}
+                <AnimatePresence>
+                    {ufoState === 'IDLE' && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            transition={{ delay: 2 }}
+                            className="absolute -right-20 top-0 bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-xl whitespace-nowrap"
+                        >
+                            Warp Speed! 🚀
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </motion.div>
+
+            {/* BOTTOM FEATURE BAR (Quick Info) */}
+            <div className="absolute bottom-0 w-full z-20 bg-gradient-to-t from-black via-black/80 to-transparent pt-20 pb-6 px-6 md:px-12 pointer-events-none">
+                <div className="max-w-7xl mx-auto flex flex-wrap justify-center md:justify-between items-center gap-6 opacity-60">
+                    <div className="flex items-center gap-2"><Zap className="w-5 h-5 text-indigo-400" /><span className="text-sm font-semibold tracking-wide">Instant Routing</span></div>
+                    <div className="hidden sm:flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-purple-400" /><span className="text-sm font-semibold tracking-wide">100% Quality Guaranteed</span></div>
+                    <div className="flex items-center gap-2"><MapPin className="w-5 h-5 text-pink-400" /><span className="text-sm font-semibold tracking-wide">Universal Tracking</span></div>
+                </div>
+            </div>
+
         </div>
     );
 };
