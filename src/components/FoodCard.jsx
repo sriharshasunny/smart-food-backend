@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import { Star, Plus, Heart, Clock, Flame } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import { optimizeImage } from '../utils/imageOptimizer';
@@ -6,6 +6,7 @@ import { optimizeImage } from '../utils/imageOptimizer';
 // Optimization: Use memo to prevent unnecessary re-renders
 const FoodCard = memo(({ food, restaurantName, variant = 'vertical', isFeatured = false, onAdd }) => {
     const { addToCart, toggleWishlist, isInWishlist, cart } = useShop();
+    const [imageLoaded, setImageLoaded] = useState(false);
     const isWishlisted = isInWishlist(food.id);
 
     // Check if item is in cart
@@ -33,12 +34,17 @@ const FoodCard = memo(({ food, restaurantName, variant = 'vertical', isFeatured 
 
                 {/* Image Section - Square - Optimized loading */}
                 <div className="relative w-28 h-28 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
+                    {/* YouTube-style Skeleton Overlay */}
+                    {!imageLoaded && (
+                        <div className="absolute inset-0 bg-gray-200 animate-pulse z-0" />
+                    )}
                     <img
                         src={optimizeImage(food.image, 200)} // Optimize for thumbnail
                         alt={food.name}
                         loading="lazy"
                         decoding="async"
-                        className="w-full h-full object-cover transform"
+                        onLoad={() => setImageLoaded(true)}
+                        className={`w-full h-full object-cover transform transition-opacity duration-500 relative z-10 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                     />
 
                     {/* Veg/Non-veg Indicator */}
@@ -101,13 +107,19 @@ const FoodCard = memo(({ food, restaurantName, variant = 'vertical', isFeatured 
             <div className="absolute inset-0 rounded-[1.5rem] border-2 border-transparent group-hover:border-white/50 pointer-events-none z-10 transition-colors duration-500" />
 
             {/* Image Section */}
-            <div className="relative h-44 bg-gray-50 overflow-hidden">
+            <div className="relative h-44 bg-gray-100 overflow-hidden">
+                {/* YouTube-style Skeleton Overlay */}
+                {!imageLoaded && (
+                    <div className="absolute inset-0 bg-gray-200 animate-pulse z-0" />
+                )}
+
                 <img
                     src={optimizeImage(food.image, 600)} // Optimize for card width
                     alt={food.name}
                     loading="lazy"
                     decoding="async"
-                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                    onLoad={() => setImageLoaded(true)}
+                    className={`w-full h-full object-cover relative z-10 transition-all duration-700 ease-out group-hover:scale-110 ${imageLoaded ? 'opacity-100' : 'opacity-0 scale-105'}`}
                 />
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-80" />
