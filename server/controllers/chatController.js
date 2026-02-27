@@ -93,13 +93,13 @@ exports.processChatRequest = async (req, res) => {
              - message (string): The answer to the user's query, OR your engaging clarifying question.
 
             Rules:
-            - Professionalism: Your responses must be warm, perfect grammar, and exceptionally helpful, matching the tone of a premium AI.
-            - If a value is not present or cannot be determined reliably, you MUST return null.
-            - price_max from "under 200", price_min from "above 100".
-            - rating_min from "above 4 rating".
+            - Professionalism: Your responses must be warm, polite, perfect grammar, and exceptionally helpful, matching the tone of a premium food delivery AI.
+            - Ambiguity Handling: If the user says "I am hungry" or "Suggest food" without specifying cuisine, diet, or budget, YOU MUST ASK A CLARIFYING QUESTION (use intent 'general_info' and put your question in 'message'). DO NOT GUESSTIMATE.
+            - Context Awareness: Pay attention to CONVERSATION CONTEXT. If a user previously said they wanted burgers, and now says "spicy ones", infer they mean spicy burgers and use 'search_food' intent with food_name="burger".
+            - If a value is not present or cannot be determined reliably, you MUST return null in the filters object.
+            - price_max from "under 200", price_min from "above 100", rating_min from "above 4 rating".
             - open_now true if user says "open now" or "late night".
             - If user asks about "order status" or "where is my food", intent is 'get_orders'.
-            - Pay attention to CONVERSATION CONTEXT to understand follow-up questions. If a user previously asked for burgers and now asks for "spicy ones", you should infer they mean spicy burgers and keep the food_name as "burger".
 
             Return strictly this JSON format EVERY TIME:
             {
@@ -134,15 +134,17 @@ exports.processChatRequest = async (req, res) => {
 
         // 4. Execute Logic based on Intent
         let dbResult = null;
+        const filters = structuredData.filters || {};
+
         switch (structuredData.intent) {
             case 'search_food':
-                dbResult = await searchFood(structuredData.filters);
+                dbResult = await searchFood(filters);
                 break;
             case 'search_restaurant':
-                dbResult = await searchRestaurants(structuredData.filters);
+                dbResult = await searchRestaurants(filters);
                 break;
             case 'get_orders':
-                dbResult = await getOrders(userId, structuredData.filters);
+                dbResult = await getOrders(userId, filters);
                 break;
             case 'get_offers':
                 dbResult = await getOffers();
@@ -177,13 +179,13 @@ exports.processChatRequest = async (req, res) => {
         console.error("Chat Controller Error Trace:", error.stack || error);
 
         // Handle Quota/Rate Limits gracefully
-        if (error.message && (error.message.includes('429') || error.message.includes('Quota'))) {
+        if (error.status === 429 || (error.message && (error.message.includes('429') || error.message.includes('Quota')))) {
             return res.status(429).json({
-                message: "I'm receiving too many requests right now (Daily Quota Exceeded). Please try again later or use a different API Key."
+                message: "I am currently assisting many customers and have reached my request limit. Please try again shortly."
             });
         }
 
-        res.status(500).json({ message: "I'm having trouble thinking right now. Please try again.", debug_error: error.message, debug_stack: error.stack });
+        res.status(500).json({ message: "I encountered a slight technical hiccup. Could you please try your request again?", debug_error: error.message, debug_stack: error.stack });
     }
 };
 
