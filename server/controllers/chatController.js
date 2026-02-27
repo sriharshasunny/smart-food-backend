@@ -21,10 +21,10 @@ exports.processChatRequest = async (req, res) => {
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         // Format conversation history for Gemini context
-        const conversationContext = history.length > 0
+        const conversationContext = history && history.length > 0
             ? history.map(msg => `${msg.sender === 'user' ? 'User' : 'SmartBot'}: ${msg.content || msg.message || ''}`).join('\n')
             : "No previous conversation.";
 
@@ -174,10 +174,10 @@ exports.processChatRequest = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Chat Controller Error:", error);
+        console.error("Chat Controller Error Trace:", error.stack || error);
 
         // Handle Quota/Rate Limits gracefully
-        if (error.message.includes('429') || error.message.includes('Quota')) {
+        if (error.message && (error.message.includes('429') || error.message.includes('Quota'))) {
             return res.status(429).json({
                 message: "I'm receiving too many requests right now (Daily Quota Exceeded). Please try again later or use a different API Key."
             });
