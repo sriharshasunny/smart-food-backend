@@ -84,8 +84,8 @@ const HeroBanner = ({ topRightContent }) => {
     const IconComponent = currentOffer.icon;
 
     return (
-        // Removed rounded-corners and mx-auto, set to 60vh minimum to feel huge and premium
-        <div className="relative w-full h-[60vh] min-h-[400px] md:h-[70vh] md:min-h-[550px] overflow-hidden bg-gray-950 group select-none content-visibility-auto contain-paint">
+        // Restored rounded corners and mx-auto
+        <div className="relative w-full mx-auto h-[60vh] min-h-[400px] md:h-[70vh] md:min-h-[550px] overflow-hidden bg-gray-950 rounded-[2rem] md:rounded-[2.5rem] shadow-2xl group select-none content-visibility-auto contain-paint">
 
             {/* Carousel Container leveraging Framer Motion AnimatePresence */}
             <div className="relative h-full w-full pointer-events-auto overflow-hidden">
@@ -196,8 +196,6 @@ const HeroBanner = ({ topRightContent }) => {
                 </div>
             </div>
 
-            {/* Fade Out Edge for seamless integration to content below */}
-            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-gray-50 to-transparent pointer-events-none z-30"></div>
         </div>
     );
 };
