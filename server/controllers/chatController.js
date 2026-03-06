@@ -1,5 +1,5 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const supabase = require('../utils/supabase'); // Assuming this is where your supabase client is
+const supabase = require('../utils/supabase');
 
 exports.processChatRequest = async (req, res) => {
     try {
@@ -9,254 +9,210 @@ exports.processChatRequest = async (req, res) => {
             return res.status(400).json({ error: "Message is required" });
         }
 
-        // Initialize Gemini AI only when needed and check for key
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
             console.error("GEMINI_API_KEY is missing in environment variables.");
             return res.json({
                 type: 'text',
-                message: "I'm currently undergoing maintenance (API Key missing). Please tell the developer to check the server logs!",
+                message: "API Key missing. Please tell the developer!",
                 sender: 'ai'
             });
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" }); // Using flash for speed and context
 
-        // Format conversation history for Gemini context
         const conversationContext = history && history.length > 0
             ? history.map(msg => `${msg.sender === 'user' ? 'User' : 'SmartBot'}: ${msg.content || msg.message || ''}`).join('\n')
             : "No previous conversation.";
 
-        // 1. Construct the Prompt (The "Brain")
-        const prompt = `
-            You are "SmartBot", a highly professional, polite, and extremely interactive AI assistant for Smart Food Delivery (like Gemini 3.1).
-            You are proactive, empathetic, and you ask clarifying questions to understand the user's exact preferences before blindly searching.
-
-            SYSTEM INFORMATION (Your Knowledge Base):
-            - **Name:** Smart Food Delivery
-            - **Service:** We deliver delicious food from top local restaurants to students and locals.
-            - **Hours:** We operate 24/7.
-            - **Delivery Time:** Usually 30-45 minutes.
-            - **Refund Policy:** No refunds once food is prepared. Contact support for issues.
-            - **Contact:** Email support@smartfood.com.
-            - **Location:** Based in your local campus area.
-
-            Your job is ONLY to:
-            1. Understand the user's message and the ongoing conversation context.
-            2. Decide if you need to ask a clarifying question OR if you have enough info to execute a search.
-            3. Extract the correct intent.
-            4. Extract structured filters.
-            5. Return ONLY valid JSON.
-
-            You must NOT:
-            - Generate SQL queries.
-            - Access any database directly.
-            - Add extra text outside JSON.
+        // --- PASS 1: INTENT & FILTER EXTRACTION ---
+        const pass1Prompt = `
+            You are the "Intent Analyzer" for Smart Food Delivery.
+            Extract the correct intent and JSON filters from the user's message based on conversation context.
 
             Supported intents:
-            - search_food (User looking for specific dish/cuisine and HAS provided enough context to search)
+            - search_food (User looking for specific dish/cuisine)
             - search_restaurant (User looking for a specific place)
-            - get_orders (User wants to see their past/current orders)
-            - get_offers (User asking for deals/discounts)
+            - get_orders (User wants to see their past orders, reorder, or check order history)
+            - get_offers (User asking for deals)
             - trending_items (User asking what's popular)
             - open_now (User specifically asking what is open)
-            - general_info (Use this to answer general questions OR to ASK CLARIFYING QUESTIONS if the user's request is too broad, like "I am hungry" or "Suggest food").
+            - general_info (Answering general questions, asking for clarification when "I am hungry" or vague).
 
-            CRITICAL BEHAVIORAL RULE:
-            - If a user makes a broad request (e.g., "I'm hungry", "What should I eat?", "Suggest something"), DO NOT trigger search_food immediately. Instead, use the 'general_info' intent to ask an engaging, conversational question to narrow it down (e.g., "I'd love to help! Are you in the mood for something healthy like a salad, or maybe a hearty burger? And do you prefer Veg or Non-Veg?").
-            - Build upon the CONVERSATION CONTEXT. If you previously asked if they want Veg or Non-Veg, and they reply "Veg", you must combine that with their previous desire to eat, and NOW trigger 'search_food' with veg=true.
+            If intent is 'search_food', possible filters: food_name (string), price_max (num), price_min (num), veg (boolean), limit (num).
+            If intent is 'search_restaurant', possible filters: restaurant_name (string), location (string).
 
-            For search_food intent, extract these possible filters:
-            - food_name (string or null): MUST be a generic food type or name (e.g., "burger", "pizza", "biryani", "chicken", "paneer"). Do NOT include adjectives like "spicy", "delicious", "hot" or "best". If the user only says adjectives without a specific food noun, leave this as null.
-            - price_max (number or null)
-            - price_min (number or null)
-            - veg (true/false/null): Set to true ONLY if user explicitly says "veg" or "vegetarian" OR if the context implies it. Set to false ONLY if explicit. Otherwise null.
-            - location (string or null)
-            - rating_min (number or null)
-            - open_now (true/false/null)
-            - limit (number or null): The maximum number of items the user requested (e.g., "top 3", "5 items").
-
-            For search_restaurant intent, extract:
-            - restaurant_name (string or null)
-            - location (string or null)
-            - rating_min (number or null)
-            - open_now (true/false/null)
-            - limit (number or null): The maximum number of items the user requested.
-            - item_limit (number or null): The maximum number of food items to show per restaurant.
-            
-            For get_orders intent, extract:
-             - limit (number or null): Number of past orders to retrieve.
-             - item_limit (number or null): Limit of items per order.
-            
-            For general_info intent, return:
-             - message (string): The answer to the user's query, OR your engaging clarifying question.
-
-            Rules:
-            - Professionalism: Your responses must be warm, polite, perfect grammar, and exceptionally helpful, matching the tone of a premium food delivery AI.
-            - Ambiguity Handling: If the user says "I am hungry" or "Suggest food" without specifying cuisine, diet, or budget, YOU MUST ASK A CLARIFYING QUESTION (use intent 'general_info' and put your question in 'message'). DO NOT GUESSTIMATE.
-            - Context Awareness: Pay attention to CONVERSATION CONTEXT. If a user previously said they wanted burgers, and now says "spicy ones", infer they mean spicy burgers and use 'search_food' intent with food_name="burger".
-            - If a value is not present or cannot be determined reliably, you MUST return null in the filters object.
-            - price_max from "under 200", price_min from "above 100", rating_min from "above 4 rating".
-            - open_now true if user says "open now" or "late night".
-            - If user asks about "order status" or "where is my food", intent is 'get_orders'.
-
-            Return strictly this JSON format EVERY TIME:
+            Return ONLY valid JSON:
             {
-              "reply": "A friendly, conversational text response. (REQUIRED for all intents, e.g., 'Sure, here are some tasty veg burgers for you!'. If intent is general_info, you can leave this empty and put your text in 'message'.)",
               "intent": "intent_name",
               "filters": {},
-              "message": "Answer string or clarifying question if intent is general_info, else null"
+              "clarification_question": "If intent is general_info, write the conversation response here. Else null."
             }
 
-            --- CONVERSATION CONTEXT (History) ---
+            Context:
             ${conversationContext}
 
             Current User Message: "${message}"
         `;
 
-        // 2. Get AI Response
-        const result = await model.generateContent(prompt);
-        const responseText = result.response.text();
+        const pass1Result = await model.generateContent(pass1Prompt);
+        const pass1Text = pass1Result.response.text();
 
-        // 3. Parse JSON safely
         let structuredData;
         try {
-            // Remove markdown code blocks if present
-            const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-            structuredData = JSON.parse(cleanJson);
+            structuredData = JSON.parse(pass1Text.replace(/```json/g, '').replace(/```/g, '').trim());
         } catch (e) {
-            console.error("AI JSON Parse Error:", responseText);
-            return res.status(500).json({ error: "Failed to understand query", raw: responseText });
+            console.error("Pass 1 JSON Parse Error:", pass1Text);
+            return res.status(500).json({ error: "Failed to understand query" });
         }
 
-        console.log("AI Intent:", structuredData);
+        console.log("Pass 1 Intent:", structuredData);
 
-        // 4. Execute Logic based on Intent
-        let dbResult = null;
+        // --- DATABASE EXECUTION ---
+        let dbResult = { available: [], unavailable: [], similar: [] };
         const filters = structuredData.filters || {};
+        const intent = structuredData.intent;
 
-        switch (structuredData.intent) {
-            case 'search_food':
-                dbResult = await searchFood(filters);
-                break;
-            case 'search_restaurant':
-                dbResult = await searchRestaurants(filters);
-                break;
-            case 'get_orders':
-                dbResult = await getOrders(userId, filters);
-                break;
-            case 'get_offers':
-                dbResult = await getOffers();
-                break;
-            case 'trending_items':
-                dbResult = await getTrendingItems();
-                break;
-            case 'open_now':
-                dbResult = await searchRestaurants({ open_now: true });
-                break;
-            case 'general_info':
-                return res.json({
-                    type: 'text',
-                    message: structuredData.message || "I'm not sure, please check our FAQ."
-                });
-            default:
-                return res.json({
-                    type: 'text',
-                    message: "I'm not sure how to help with that yet. Try asking for food, restaurants, or your orders!"
-                });
+        if (intent === 'search_food') {
+            dbResult = await advancedSearchFood(filters);
+        } else if (intent === 'search_restaurant') {
+            dbResult.available = await searchRestaurants(filters);
+        } else if (intent === 'get_orders') {
+            dbResult = await advancedGetOrders(userId, filters);
+        } else if (intent === 'get_offers') {
+            dbResult.available = await getOffers();
+        } else if (intent === 'trending_items') {
+            dbResult.available = await getTrendingItems();
+        } else if (intent === 'open_now') {
+            dbResult.available = await searchRestaurants({ open_now: true });
+        } else if (intent === 'general_info') {
+            return res.json({
+                type: 'text',
+                message: structuredData.clarification_question || "I'm here to help with your food needs!"
+            });
         }
 
-        // 5. Return Result
+        // Handle cases where intent requires items but nothing was found at all
+        if (intent !== 'general_info' && dbResult.available.length === 0 && dbResult.unavailable.length === 0 && dbResult.similar.length === 0) {
+            if (intent === 'get_orders') {
+                // Might actually have no past orders
+                dbResult.empty_reason = "No past orders found in the database.";
+            } else {
+                dbResult.empty_reason = "No items matched the criteria.";
+            }
+        }
+
+        // --- PASS 2: DYNAMIC GENERATION ---
+        // We tell the AI what the DB actually found, so it can write a highly personalized message.
+        const dbSummary = {
+            intent: intent,
+            found_available_items: dbResult.available.map(i => i.name || (i.foods ? i.name + ' (Restaurant)' : 'Order Item')),
+            found_unavailable_items: dbResult.unavailable.map(i => i.name || 'Unknown'),
+            found_similar_items: dbResult.similar.map(i => i.name || 'Unknown'),
+            empty_reason: dbResult.empty_reason
+        };
+
+        const pass2Prompt = `
+            You are "SmartBot", the highly intelligent, extremely supportive, empathetic, and human-like AI assistant for Smart Food Delivery.
+            You have access to the user's conversation history and the physical database results retrieved for their latest query.
+
+            User's original query: "${message}"
+
+            What the database actually found based on that query: 
+            ${JSON.stringify(dbSummary, null, 2)}
+
+            YOUR TASK:
+            Write a natural, conversational response back to the user (as "SmartBot"). 
+
+            CRITICAL RULES:
+            1. If the user asked for Past Orders ('get_orders'), and some items in their past orders are UNAVAILABLE (found_unavailable_items), you MUST explicitly say: "I checked your past orders, but it looks like the [Item Name] is currently out of stock." Then, warmly suggest the SIMILAR available items ("However, I found some similar items you might love...").
+            2. If unavailable items exist for 'search_food', mention they are out of stock and offer the available alternatives.
+            3. Do NOT list out all the items in text like a catalog. The cards will be displayed visually beneath your message. Just provide the conversational intro/bridge! 
+            4. Keep it concise, incredibly supportive, friendly, and "ChatGPT-like". 
+
+            Only return the raw conversational text string. No JSON, no markdown formatting.
+        `;
+
+        const pass2Result = await model.generateContent(pass2Prompt);
+        const finalMessage = pass2Result.response.text().trim();
+
+        console.log("Pass 2 Response:", finalMessage);
+
+        // --- FINAL RESPONSE ASSEMBLY ---
+        // Combine the available past order items and the similar items to be shown in the UI cards
+        let finalDataToDisplay = [];
+
+        if (intent === 'get_orders') {
+            // For get_orders, if they just want orders, returning orders array.
+            // If we had unavailable items and fetched similar foods, we should probably output intent as 'search_food' so the frontend shows food cards for the similar items, 
+            // OR send the raw original orders (if we still want to render the order card) AND a list of similar items.
+            // Given the frontend expecting array of items for 'search_food', returning 'search_food' intent if we are suggesting similar items makes sense, 
+            // but let's stick to the intent they asked, but pass the data suitably.
+
+            // If we had to find similar items because of out-of-stock, let's change type to 'search_food' so the UI renders clickable food cards for suggested items.
+            if (dbResult.unavailable.length > 0 && dbResult.similar.length > 0) {
+                finalDataToDisplay = [...dbResult.available, ...dbResult.similar];
+                // Override intent so frontend renders food cards instead of past order blobs
+                structuredData.intent = 'search_food';
+            } else {
+                finalDataToDisplay = dbResult.original_orders || dbResult.available;
+            }
+        } else {
+            finalDataToDisplay = [...dbResult.available, ...dbResult.similar];
+        }
+
         res.json({
             type: structuredData.intent,
-            data: dbResult,
-            message: structuredData.reply || structuredData.message || "Here's what I found!",
-            ai_summary: structuredData // Optional: for debugging
+            data: finalDataToDisplay,
+            message: finalMessage
         });
 
     } catch (error) {
         console.error("Chat Controller Error Trace:", error.stack || error);
-
-        // Handle Quota/Rate Limits gracefully
-        if (error.status === 429 || (error.message && (error.message.includes('429') || error.message.includes('Quota')))) {
-            return res.status(429).json({
-                message: "I am currently assisting many customers and have reached my request limit. Please try again shortly."
-            });
-        }
-
-        res.status(500).json({ message: "I encountered a slight technical hiccup. Could you please try your request again?", debug_error: error.message, debug_stack: error.stack });
+        res.status(500).json({ message: "I encountered a slight technical hiccup. Could you please try again?" });
     }
 };
 
-// --- Helper Functions (Database Logic) ---
+// --- Advanced Database Logic ---
 
-async function searchFood(filters) {
+async function advancedSearchFood(filters) {
     let query = supabase.from('foods').select('*, restaurant:restaurants(*)');
 
     if (filters.food_name) {
-        // Use an OR query to match name, category, or description securely
         query = query.or(`name.ilike.%${filters.food_name}%,category.ilike.%${filters.food_name}%,description.ilike.%${filters.food_name}%`);
     }
-    if (filters.price_max) {
-        query = query.lte('price', filters.price_max);
-    }
-    if (filters.price_min) {
-        query = query.gte('price', filters.price_min);
-    }
-    if (typeof filters.veg === 'boolean') { // Safer check
-        query = query.eq('is_veg', filters.veg);
-    }
-    if (filters.rating_min) {
-        query = query.gte('rating', filters.rating_min);
-    }
-    // Note: 'location' and 'open_now' might need joins with restaurant table if not denormalized
+    if (filters.price_max) query = query.lte('price', filters.price_max);
+    if (filters.price_min) query = query.gte('price', filters.price_min);
+    if (typeof filters.veg === 'boolean') query = query.eq('is_veg', filters.veg);
+    if (filters.rating_min) query = query.gte('rating', filters.rating_min);
 
-    // Limit results
     const resultLimit = filters.limit ? Math.min(filters.limit, 20) : 10;
     query = query.limit(resultLimit);
 
     const { data, error } = await query;
     if (error) throw error;
-    return data;
+
+    // Split into available and unavailable
+    const available = [];
+    const unavailable = [];
+
+    (data || []).forEach(item => {
+        // Handle boolean is_available 
+        if (item.is_available === true || item.is_available === null || typeof item.is_available === 'undefined') {
+            available.push(item);
+        } else {
+            unavailable.push(item);
+        }
+    });
+
+    return { available, unavailable, similar: [] };
 }
 
-async function searchRestaurants(filters) {
-    let query = supabase.from('restaurants').select('*, foods(*)');
+async function advancedGetOrders(userId, filters) {
+    if (!userId) return { available: [], unavailable: [], similar: [], empty_reason: "User not logged in." };
 
-    if (filters.restaurant_name) {
-        query = query.ilike('name', `%${filters.restaurant_name}%`);
-    }
-    if (filters.location) {
-        query = query.ilike('address', `%${filters.location}%`); // Simple fuzzy match
-    }
-    if (filters.rating_min) {
-        query = query.gte('rating', filters.rating_min);
-    }
-    // open_now logic depends on how you store hours. 
-    // Assuming simple boolean for now or omitted.
-
-    const resultLimit = filters.limit ? Math.min(filters.limit, 20) : 5;
-    query = query.limit(resultLimit);
-
-    const { data, error } = await query;
-    if (error) throw error;
-
-    // Sort and limit foods per restaurant
-    if (data) {
-        data.forEach(rest => {
-            if (rest.foods && Array.isArray(rest.foods)) {
-                rest.foods = rest.foods.sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, filters.item_limit || 3);
-            }
-        });
-    }
-
-    return data;
-}
-
-async function getOrders(userId, filters) {
-    if (!userId) return { message: "Please log in to see your orders." };
-
+    // Fetch the recent orders and their items with joined food data
     let query = supabase
         .from('orders')
         .select('*, items:order_items(*, food:foods(*, restaurant:restaurants(*)))')
@@ -264,42 +220,113 @@ async function getOrders(userId, filters) {
         .order('created_at', { ascending: false })
         .limit(filters.limit || 5);
 
-    const { data, error } = await query;
+    const { data: orders, error } = await query;
+    if (error) throw error;
 
-    // Process item_limit if requested
-    if (data && filters.item_limit) {
-        data.forEach(order => {
-            if (order.items && order.items.length > filters.item_limit) {
-                order.items = order.items.slice(0, filters.item_limit);
+    if (!orders || orders.length === 0) {
+        return { available: [], unavailable: [], similar: [], original_orders: [] };
+    }
+
+    const availableFoods = [];
+    const unavailableFoods = [];
+    const categoriesToSearch = new Set();
+    const restaurantsToSearch = new Set();
+
+    // Analyze order items for availability
+    orders.forEach(order => {
+        (order.items || []).forEach(orderItem => {
+            const food = orderItem.food;
+            if (food) {
+                if (food.is_available === false) {
+                    // Keep track of unique unavailable items to prevent spamming
+                    if (!unavailableFoods.find(f => f.id === food.id)) {
+                        unavailableFoods.push(food);
+                        if (food.category) categoriesToSearch.add(food.category);
+                        if (food.restaurant && food.restaurant.id) restaurantsToSearch.add(food.restaurant.id);
+                    }
+                } else {
+                    if (!availableFoods.find(f => f.id === food.id)) {
+                        availableFoods.push(food);
+                    }
+                }
+            }
+        });
+    });
+
+    let similarItems = [];
+    // If we have unavailable items, fetch similar alternatives!
+    if (unavailableFoods.length > 0) {
+        let similarQuery = supabase.from('foods').select('*, restaurant:restaurants(*)').eq('is_available', true);
+
+        const orConditions = [];
+        if (categoriesToSearch.size > 0) {
+            const catArray = Array.from(categoriesToSearch);
+            orConditions.push(`category.in.(${catArray.join(',')})`);
+        }
+        if (restaurantsToSearch.size > 0) {
+            const restArray = Array.from(restaurantsToSearch);
+            orConditions.push(`restaurant_id.in.(${restArray.join(',')})`);
+        }
+
+        if (orConditions.length > 0) {
+            similarQuery = similarQuery.or(orConditions.join(','));
+        }
+
+        // Only get a few top rated alternatives
+        similarQuery = similarQuery.order('rating', { ascending: false }).limit(6);
+        const { data: similarData } = await similarQuery;
+
+        if (similarData) {
+            // Exclude items already in availableFoods
+            const availableSet = new Set(availableFoods.map(f => f.id));
+            similarItems = similarData.filter(item => !availableSet.has(item.id));
+        }
+    }
+
+    return {
+        available: availableFoods,
+        unavailable: unavailableFoods,
+        similar: similarItems,
+        original_orders: orders // Keep original orders if we just want to display them normally
+    };
+}
+
+async function searchRestaurants(filters) {
+    let query = supabase.from('restaurants').select('*, foods(*)');
+
+    if (filters.restaurant_name) query = query.ilike('name', `%${filters.restaurant_name}%`);
+    if (filters.location) query = query.ilike('address', `%${filters.location}%`);
+    if (filters.rating_min) query = query.gte('rating', filters.rating_min);
+
+    const resultLimit = filters.limit ? Math.min(filters.limit, 20) : 5;
+    query = query.limit(resultLimit);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    if (data) {
+        data.forEach(rest => {
+            if (rest.foods && Array.isArray(rest.foods)) {
+                // Return ONLY available foods for restaurants
+                rest.foods = rest.foods
+                    .filter(f => f.is_available !== false)
+                    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+                    .slice(0, filters.item_limit || 3);
             }
         });
     }
-    if (error) throw error;
+
     return data;
 }
 
 async function getOffers() {
-    // Assuming 'discount_price' exists or 'original_price' > 'price'
-    // Or you have an 'is_offer' flag. 
-    // Let's assume looking for items with a discount field > 0
-    // Adjust based on your schema. For now, just random foods.
-
-    const { data, error } = await supabase
-        .from('foods')
-        .select('*, restaurant:restaurants(*)')
-        .limit(5); // Placeholder logic
-
+    const { data, error } = await supabase.from('foods').select('*, restaurant:restaurants(*)').eq('is_available', true).limit(5);
     if (error) throw error;
     return data;
 }
 
 async function getTrendingItems() {
-    const { data, error } = await supabase
-        .from('foods')
-        .select('*, restaurant:restaurants(*)')
-        .order('rating', { ascending: false })
-        .limit(5);
-
+    const { data, error } = await supabase.from('foods').select('*, restaurant:restaurants(*)').eq('is_available', true).order('rating', { ascending: false }).limit(5);
     if (error) throw error;
     return data;
 }

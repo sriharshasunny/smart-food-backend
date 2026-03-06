@@ -285,7 +285,7 @@ const ChatWidget = () => {
                         </div>
                     )}
                     {(!Array.isArray(orders) || orders.length === 0) ? (
-                        <p className="text-gray-400 text-sm mt-2 italic">Oops! No recent orders found in your history.</p>
+                        !msg.message && <p className="text-gray-400 text-sm mt-2 italic">Oops! No recent orders found in your history.</p>
                     ) : (
                         <div className="flex flex-col gap-3 mt-1 w-full">
                             <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Recent Orders</p>
