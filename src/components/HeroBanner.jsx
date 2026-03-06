@@ -35,46 +35,23 @@ const premiumOffers = [
     }
 ];
 
-// High-Performance CSS-only floating orbs
-const FloatingOrbs = () => (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none z-10 opacity-70">
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-orange-500/40 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '4s' }} />
-        <div className="absolute top-1/2 -right-32 w-[30rem] h-[30rem] bg-purple-600/30 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '6s', animationDelay: '1s' }} />
-        <div className="absolute -bottom-40 left-1/4 w-[25rem] h-[25rem] bg-pink-500/30 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '5s', animationDelay: '2s' }} />
-    </div>
-);
-
 // Framer Motion Variants
 const containerVariants = {
     hidden: { opacity: 0 },
-    show: {
-        opacity: 1,
-        transition: { staggerChildren: 0.15, delayChildren: 0.2 }
-    },
-    exit: { opacity: 0, transition: { duration: 0.5 } }
+    show: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.1 } },
+    exit: { opacity: 0, transition: { duration: 0.3 } }
 };
 
 const itemVariants = {
-    hidden: { opacity: 0, y: 30, filter: 'blur(10px)' },
-    show: {
-        opacity: 1,
-        y: 0,
-        filter: 'blur(0px)',
-        transition: { type: 'spring', stiffness: 70, damping: 15 }
-    }
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100, damping: 20 } }
 };
 
+// Simplified lightweight image variant (No continuous scaling/Ken Burns)
 const imageVariants = {
-    hidden: { scale: 1.1, opacity: 0 },
-    show: {
-        scale: 1,
-        opacity: 1,
-        transition: {
-            opacity: { duration: 1 },
-            scale: { duration: 15, ease: "linear" } // Continuous pan/zoom (Ken Burns)
-        }
-    },
-    exit: { opacity: 0, transition: { duration: 0.8 } }
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { duration: 0.5 } },
+    exit: { opacity: 0, transition: { duration: 0.5 } }
 };
 
 const SWIPE_CONFIDENCE_THRESHOLD = 10000;
@@ -110,8 +87,6 @@ const HeroBanner = ({ topRightContent }) => {
         // Removed rounded-corners and mx-auto, set to 60vh minimum to feel huge and premium
         <div className="relative w-full h-[60vh] min-h-[400px] md:h-[70vh] md:min-h-[550px] overflow-hidden bg-gray-950 group select-none content-visibility-auto contain-paint">
 
-            <FloatingOrbs />
-
             {/* Carousel Container leveraging Framer Motion AnimatePresence */}
             <div className="relative h-full w-full pointer-events-auto overflow-hidden">
                 <AnimatePresence initial={false} custom={direction}>
@@ -144,7 +119,7 @@ const HeroBanner = ({ topRightContent }) => {
                             alt={currentOffer.title}
                             decoding="async"
                             loading="eager"
-                            className="absolute inset-0 w-full h-full object-cover object-center saturate-125 brightness-110 contrast-125 origin-center pointer-events-none"
+                            className="absolute inset-0 w-full h-full object-cover object-center origin-center pointer-events-none"
                         />
 
                         {/* High-End Glassmorphism Overlay */}
@@ -175,12 +150,10 @@ const HeroBanner = ({ topRightContent }) => {
                                 </motion.p>
 
                                 <motion.div variants={itemVariants} className="flex items-center gap-3 md:gap-5 flex-wrap">
-                                    {/* Shimmering Button */}
-                                    <button className="group/btn relative px-6 py-3.5 md:px-10 md:py-4 bg-white text-black rounded-xl md:rounded-2xl font-black text-xs md:text-sm uppercase tracking-wider hover:bg-gray-100 transition-all duration-300 shadow-2xl hover:shadow-white/30 flex items-center gap-2 md:gap-3 overflow-hidden cursor-pointer">
-                                        {/* Shimmer effect overlay */}
-                                        <div className="absolute inset-0 -translate-x-full group-hover/btn:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-black/10 to-transparent skew-x-12"></div>
+                                    {/* Clean Button */}
+                                    <button className="group/btn relative px-6 py-3.5 md:px-10 md:py-4 bg-white text-black rounded-xl md:rounded-2xl font-black text-xs md:text-sm uppercase tracking-wider hover:bg-orange-50 transition-colors duration-300 shadow-xl flex items-center gap-2 md:gap-3 cursor-pointer">
                                         <span className="relative z-10 transition-transform group-hover/btn:scale-105">View Menu</span>
-                                        <ArrowRight size={18} className="md:w-5 md:h-5 relative z-10 transition-transform group-hover/btn:translate-x-1.5 text-orange-500 group-hover/btn:text-red-500" />
+                                        <ArrowRight size={18} className="md:w-5 md:h-5 relative z-10 transition-transform group-hover/btn:translate-x-1 text-orange-500" />
                                     </button>
 
                                     <div className="hidden sm:flex items-center gap-2 px-5 py-3 md:py-3.5 bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl">
