@@ -20,34 +20,52 @@ async function generateWithRetry(model, prompt, maxRetries = 2) {
     }
 }
 
+// ── Extract price limit from text ("under 200", "below 300", "less than 150") ──
+function extractPriceMax(text) {
+    const m = text.match(/(?:under|below|less than|max|upto|within|at most)\s*(?:rs\.?|inr|₹)?\s*(\d+)/i);
+    return m ? parseInt(m[1]) : null;
+}
+
 // ── LOCAL KEYWORD FAST-PATH ───────────────────────────────────────────────────
-// Detect common queries without hitting Gemini at all → ~0ms intent detection
 function detectIntentLocally(message) {
     const m = message.toLowerCase();
 
     // Trending / popular
-    if (/trending|popular|top rated|best rated|top food|recommended/i.test(m))
+    if (/trending|popular|top rated|best rated|top food|recommended|what.?s hot|most ordered/i.test(m))
         return { intent: 'trending_items', filters: {} };
 
-    // Veg only
-    if (/\bveg\b(?:etarian)?.*food|\bveg\b.*option|\bveg\b.*item|only veg|pure veg/i.test(m))
+    // Veg only (be specific so we don't catch "non-veg")
+    if (/\bveg\b(?!etable)(?:etarian)?.*(?:food|option|item|only|pure|meal|dish)?|only veg|pure veg|vegetarian food/i.test(m) && !/non.?veg/i.test(m))
         return { intent: 'search_food', filters: { veg: true, limit: 8 } };
 
     // Non-veg
-    if (/non.?veg|nonveg|chicken|mutton|fish|prawn|egg.*food|meat/i.test(m) && !/restaurant/i.test(m))
+    if (/non.?veg|chicken|mutton|fish|prawn|egg.*food|meat(?!ball)|kebab|tikka/i.test(m) && !/restaurant/i.test(m))
         return { intent: 'search_food', filters: { veg: false, limit: 8 } };
 
-    // Specific foods  
-    const foodMatch = m.match(/(?:show me |find |get |want |craving |order |best |good )?(biryani|burger|pizza|pasta|noodles|dosa|idli|sandwich|roll|momos|fried rice|manchurian|paneer|sushi|tacos?|ramen|soup)\b/i);
+    // Price-capped food search ("food under 200", "items below 150", "suggest food under 200")
+    const priceMax = extractPriceMax(m);
+    if (priceMax && (/food|item|eat|meal|dish|suggest|show|find|order|snack/i.test(m) || m.includes('under') || m.includes('below'))) {
+        const isVeg = /veg/i.test(m) && !/non.?veg/i.test(m) ? true : /non.?veg|chicken|meat/i.test(m) ? false : undefined;
+        const filters = { price_max: priceMax, limit: 8 };
+        if (typeof isVeg === 'boolean') filters.veg = isVeg;
+        return { intent: 'search_food', filters };
+    }
+
+    // Restaurant search ("top restaurants", "best restaurants", "find restaurants")
+    if (/top.*restaurant|best.*restaurant|find.*restaurant|show.*restaurant|restaurant.*near|give.*restaurant/i.test(m))
+        return { intent: 'search_restaurant', filters: {} };
+
+    // Specific foods
+    const foodMatch = m.match(/(?:show me |find |get |want |craving |order |best |good |suggest )?(biryani|burger|pizza|pasta|noodles|dosa|idli|sandwich|roll|momos|fried rice|manchurian|paneer|sushi|tacos?|ramen|soup|waffles?|ice cream|salad|wrap|quesadilla)\b/i);
     if (foodMatch)
         return { intent: 'search_food', filters: { food_name: foodMatch[1], limit: 6 } };
 
     // Offers / deals
-    if (/offer|deal|discount|coupon|promo|sale|cheap|budget/i.test(m))
+    if (/offer|deal|discount|coupon|promo|sale|cheap|budget|affordable|low price/i.test(m))
         return { intent: 'get_offers', filters: {} };
 
     // Orders
-    if (/my order|past order|order history|previous order|reorder|what did i order/i.test(m))
+    if (/my order|past order|order history|previous order|reorder|what did i order|show order/i.test(m))
         return { intent: 'get_orders', filters: {} };
 
     // Open now
@@ -171,9 +189,10 @@ Return ONLY valid JSON, no markdown.`.trim();
 
             } catch (aiErr) {
                 console.error('[Chat] Gemini error:', aiErr.message);
-                const fallback = "Sorry, I had trouble understanding that. Try: 'Show me biryani' or 'Veg food options'.";
-                saveChatHistory(userId, 'assistant', fallback);
-                return res.json({ type: 'text', message: fallback });
+                // Instead of showing an error, fall back to showing trending items
+                intent = 'trending_items';
+                filters = {};
+                filters._aiMessage = "Here are some popular items you might enjoy while I get back on track! 🍽️";
             }
         }
 
