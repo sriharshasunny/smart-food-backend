@@ -10,6 +10,19 @@ import { useShop } from '../context/ShopContext';
 import { useNavigate } from 'react-router-dom';
 import { optimizeImage } from '../utils/imageOptimizer';
 
+const pulseGlow = `
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+`;
+
 /* ─────────────────────────────────────────────────────────────────────────────
    Typewriter
 ───────────────────────────────────────────────────────────────────────────── */
@@ -36,11 +49,14 @@ const ChatFoodCard = memo(({ food, onAdd, onViewRestaurant, index = 0 }) => {
 
     return (
         <div
-            className={`group relative bg-white rounded-2xl overflow-hidden border transition-all duration-200 shadow-sm ${isSuspended
-                    ? 'border-gray-200 opacity-70 grayscale-[25%]'
-                    : 'border-gray-100 hover:border-orange-200 hover:shadow-md hover:-translate-y-0.5'
+            className={`group relative bg-white rounded-2xl overflow-hidden border transition-all duration-300 shadow-sm animate-slide-up ${isSuspended
+                ? 'border-gray-200 opacity-70 grayscale-[25%]'
+                : 'border-gray-100 hover:border-orange-200 hover:shadow-xl hover:-translate-y-1'
                 }`}
-            style={{ animationDelay: `${index * 50}ms` }}
+            style={{
+                animationDelay: `${index * 80}ms`,
+                animationFillMode: 'both'
+            }}
         >
             {/* Image */}
             <div className="relative h-32 overflow-hidden bg-gray-100">
@@ -169,8 +185,8 @@ const Chip = memo(({ label, emoji, onClick, active }) => (
     <button
         onClick={() => onClick(label)}
         className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl border text-[11px] font-bold whitespace-nowrap transition-all duration-200 active:scale-95 ${active
-                ? 'bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-200'
-                : 'bg-white border-gray-200 text-gray-600 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
+            ? 'bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-200'
+            : 'bg-white border-gray-200 text-gray-600 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600'
             }`}
     >
         <span className="text-base leading-none">{emoji}</span> {label}
@@ -449,20 +465,24 @@ const ChatWidget = () => {
                 `}>
 
                     {/* ── Header ── matches navbar style */}
-                    <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 shrink-0">
+                    <style>{pulseGlow}</style>
+                    <div className="flex items-center justify-between px-4 py-4 bg-white border-b border-gray-100 shrink-0">
                         <div className="flex items-center gap-3">
                             {/* Bot avatar */}
                             <div className="relative">
-                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center shadow-md shadow-orange-200">
-                                    <Sparkles size={18} className="text-white" />
+                                <div
+                                    className="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center shadow-lg shadow-orange-200/50"
+                                    style={{ animation: 'pulse-glow 2s infinite' }}
+                                >
+                                    <Sparkles size={20} className="text-white drop-shadow-sm" />
                                 </div>
-                                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 border-2 border-white rounded-full shadow-sm" />
+                                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 border-[2.5px] border-white rounded-full shadow-sm" />
                             </div>
                             <div>
-                                <h3 className="text-[14px] font-black text-gray-900 leading-none">Smart Assistant</h3>
-                                <div className="flex items-center gap-1.5 mt-0.5">
-                                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                                    <span className="text-[10px] text-green-600 font-semibold">Online · AI Powered</span>
+                                <h3 className="text-[15px] font-black text-slate-900 tracking-tight leading-none uppercase">Smart Assistant</h3>
+                                <div className="flex items-center gap-1.5 mt-1">
+                                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                                    <span className="text-[10px] text-slate-500 font-bold tracking-wide uppercase">AI Engine · Active</span>
                                 </div>
                             </div>
                         </div>
@@ -560,8 +580,8 @@ const ChatWidget = () => {
 
                                                 <div className="max-w-[88%]">
                                                     <div className={`px-3.5 py-2.5 rounded-2xl shadow-sm ${isUser
-                                                            ? 'bg-orange-500 text-white rounded-tr-md shadow-orange-200'
-                                                            : 'bg-white text-gray-700 rounded-tl-md border border-gray-100'
+                                                        ? 'bg-orange-500 text-white rounded-tr-md shadow-orange-200'
+                                                        : 'bg-white text-gray-700 rounded-tl-md border border-gray-100'
                                                         }`}>
                                                         {renderContent(msg, isLatest)}
                                                     </div>

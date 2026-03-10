@@ -236,7 +236,11 @@ Return ONLY valid JSON, no markdown.`.trim();
 // ── Database helpers ──────────────────────────────────────────────────────────
 
 async function advancedSearchFood(filters) {
-    let query = supabase.from('foods').select('*, restaurant:restaurants(*)');
+    // !inner join ensures we only get foods where a restaurant exists and matches our inner filter
+    let query = supabase.from('foods').select('*, restaurant:restaurants!inner(*)');
+
+    // Filter by restaurant activity first
+    query = query.eq('restaurant.is_active', true);
 
     if (filters.food_name) {
         const words = filters.food_name.split(',').map(w => w.replace(/[^a-zA-Z0-9 ]/g, '').trim()).filter(Boolean);
@@ -292,7 +296,8 @@ async function advancedGetOrders(userId, filters) {
 
     let similar = [];
     if (unavailable.length > 0) {
-        let q = supabase.from('foods').select('*, restaurant:restaurants(*)').eq('available', true);
+        // Check activity of restaurant in similar items too
+        let q = supabase.from('foods').select('*, restaurant:restaurants!inner(*)').eq('available', true).eq('restaurant.is_active', true);
         const conds = [];
         if (cats.size) conds.push(`category.in.(${[...cats].join(',')})`);
         if (rests.size) conds.push(`restaurant_id.in.(${[...rests].join(',')})`);
@@ -329,13 +334,15 @@ async function searchRestaurants(filters = {}) {
 
 async function getOffers(filters = {}) {
     const limit = filters.limit || 6;
-    // Show ONLY available items sorted by rating
-    let { data, error } = await supabase.from('foods').select('*, restaurant:restaurants(*)')
+    // Show ONLY available items from ACTIVE restaurants sorted by rating
+    let { data, error } = await supabase.from('foods').select('*, restaurant:restaurants!inner(*)')
         .eq('available', true)
+        .eq('restaurant.is_active', true)
         .order('rating', { ascending: false, nullsLast: true }).limit(limit);
     if (error && error.message?.includes('rating')) {
-        ({ data, error } = await supabase.from('foods').select('*, restaurant:restaurants(*)')
+        ({ data, error } = await supabase.from('foods').select('*, restaurant:restaurants!inner(*)')
             .eq('available', true)
+            .eq('restaurant.is_active', true)
             .order('created_at', { ascending: false }).limit(limit));
     }
     if (error) throw error;
@@ -344,13 +351,15 @@ async function getOffers(filters = {}) {
 
 async function getTrendingItems(filters = {}) {
     const limit = filters.limit || 6;
-    // Show ONLY available items, best rated first
-    let { data, error } = await supabase.from('foods').select('*, restaurant:restaurants(*)')
+    // Show ONLY available items from ACTIVE restaurants, best rated first
+    let { data, error } = await supabase.from('foods').select('*, restaurant:restaurants!inner(*)')
         .eq('available', true)
+        .eq('restaurant.is_active', true)
         .order('rating', { ascending: false, nullsLast: true }).limit(limit);
     if (error && error.message?.includes('rating')) {
-        ({ data, error } = await supabase.from('foods').select('*, restaurant:restaurants(*)')
+        ({ data, error } = await supabase.from('foods').select('*, restaurant:restaurants!inner(*)')
             .eq('available', true)
+            .eq('restaurant.is_active', true)
             .order('created_at', { ascending: false }).limit(limit));
     }
     if (error) throw error;
