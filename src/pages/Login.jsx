@@ -10,7 +10,7 @@ import {
 
 const Auth = () => {
     const navigate = useNavigate();
-    const { login, register } = useAuth();
+    const { login, register, verifyRegisterOtp } = useAuth();
     const canvasRef = useRef(null);
     const [mode, setMode] = useState('login');
     const [step, setStep] = useState(1);
@@ -176,7 +176,42 @@ const Auth = () => {
     const switchMode = (mode) => { setMode(mode); setStep(1); setError(null); setSuccessMsg(null); };
 
     const handleLogin = async (e) => { e.preventDefault(); setLoading(true); try { const res = await login(formData.email, formData.password); if (res.success) navigate('/home'); else setError(res.message); } catch { setError('Error'); } finally { setLoading(false); } };
-    const handleRegister = async (e) => { e.preventDefault(); setLoading(true); try { const res = await register(formData.name, formData.email, formData.password); if (res.success) navigate('/home'); else setError(res.message); } catch { setError('Error'); } finally { setLoading(false); } };
+
+    const handleRegisterStep1 = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const res = await register(formData.name, formData.email, formData.password);
+            if (res.success) {
+                setStep(2);
+                setSuccessMsg('OTP sent to your email.');
+            } else {
+                setError(res.message);
+            }
+        } catch {
+            setError('Error processing registration');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRegisterStep2 = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const res = await verifyRegisterOtp(formData.name, formData.email, formData.password, formData.otp);
+            if (res.success) {
+                navigate('/home');
+            } else {
+                setError(res.message);
+            }
+        } catch {
+            setError('Error verifying OTP');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSendResetOtp = async (e) => { e.preventDefault(); setLoading(true); try { const res = await fetch(`${API_URL}/api/auth/send-otp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: formData.email, type: 'reset' }) }); const data = await res.json(); if (res.ok) { setStep(2); if (data.devCode) console.log(data.devCode); } else setError(data.message); } catch { setError('Error'); } finally { setLoading(false); } };
     const handleResetPassword = async (e) => { e.preventDefault(); setLoading(true); try { const res = await fetch(`${API_URL}/api/auth/reset-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: formData.email, otp: formData.otp, newPassword: formData.newPassword }) }); if (res.ok) { setSuccessMsg('Success!'); setTimeout(() => switchMode('login'), 2000); } else setError('Failed'); } catch { setError('Error'); } finally { setLoading(false); } };
 
@@ -209,11 +244,21 @@ const Auth = () => {
                             </motion.form>
                         )}
                         {mode === 'register' && (
-                            <motion.form key="register" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }} onSubmit={handleRegister} className="space-y-4">
-                                <div className="space-y-1.5"><label className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Pilot Designation</label><div className="relative group"><User className="absolute left-4 top-3.5 w-4 h-4 text-gray-500 group-focus-within:text-indigo-400 transition-colors" /><input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm placeholder-gray-600 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white/[0.08] focus:outline-none transition-all duration-300 shadow-inner" placeholder="Cmdr. Shepard" required /></div></div>
-                                <div className="space-y-1.5"><label className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Fleet Identity</label><div className="relative group"><Mail className="absolute left-4 top-3.5 w-4 h-4 text-gray-500 group-focus-within:text-indigo-400 transition-colors" /><input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm placeholder-gray-600 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white/[0.08] focus:outline-none transition-all duration-300 shadow-inner" placeholder="pilot@foodverse.com" required /></div></div>
-                                <div className="space-y-1.5"><label className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Access Key</label><div className="relative group"><Lock className="absolute left-4 top-3.5 w-4 h-4 text-gray-500 group-focus-within:text-indigo-400 transition-colors" /><input type="password" name="password" value={formData.password} onChange={handleChange} className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm placeholder-gray-600 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white/[0.08] focus:outline-none transition-all duration-300 shadow-inner" placeholder="••••••••" required /></div></div>
-                                <button type="submit" disabled={loading} className="w-full py-3.5 bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white rounded-xl font-bold tracking-wide active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(99,102,241,0.4)] hover:shadow-[0_6px_25px_rgba(99,102,241,0.5)] mt-4 text-sm group border border-indigo-400/30">{loading ? 'Preparing Pod...' : <>Join System <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>}</button>
+                            <motion.form key="register" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }} onSubmit={step === 1 ? handleRegisterStep1 : handleRegisterStep2} className="space-y-4">
+                                {step === 1 ? (
+                                    <>
+                                        <div className="space-y-1.5"><label className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Pilot Designation</label><div className="relative group"><User className="absolute left-4 top-3.5 w-4 h-4 text-gray-500 group-focus-within:text-indigo-400 transition-colors" /><input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm placeholder-gray-600 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white/[0.08] focus:outline-none transition-all duration-300 shadow-inner" placeholder="Cmdr. Shepard" required /></div></div>
+                                        <div className="space-y-1.5"><label className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Fleet Identity</label><div className="relative group"><Mail className="absolute left-4 top-3.5 w-4 h-4 text-gray-500 group-focus-within:text-indigo-400 transition-colors" /><input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm placeholder-gray-600 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white/[0.08] focus:outline-none transition-all duration-300 shadow-inner" placeholder="pilot@foodverse.com" required /></div></div>
+                                        <div className="space-y-1.5"><label className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Access Key</label><div className="relative group"><Lock className="absolute left-4 top-3.5 w-4 h-4 text-gray-500 group-focus-within:text-indigo-400 transition-colors" /><input type="password" name="password" value={formData.password} onChange={handleChange} className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm placeholder-gray-600 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white/[0.08] focus:outline-none transition-all duration-300 shadow-inner" placeholder="••••••••" required /></div></div>
+                                        <button type="submit" disabled={loading} className="w-full py-3.5 bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white rounded-xl font-bold tracking-wide active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(99,102,241,0.4)] hover:shadow-[0_6px_25px_rgba(99,102,241,0.5)] mt-4 text-sm group border border-indigo-400/30">{loading ? 'Preparing Pod...' : <>Send Verification Code <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>}</button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="space-y-1.5"><label className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Verification Code</label><input type="text" name="otp" value={formData.otp} onChange={handleChange} className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-3 px-4 text-white text-sm placeholder-gray-600 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white/[0.08] focus:outline-none transition-all duration-300 shadow-inner text-center tracking-widest font-mono" placeholder="----" required /></div>
+                                        <button type="submit" disabled={loading} className="w-full py-3.5 bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white rounded-xl font-bold tracking-wide active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(99,102,241,0.4)] hover:shadow-[0_6px_25px_rgba(99,102,241,0.5)] mt-4 text-sm group border border-indigo-400/30">{loading ? 'Verifying...' : <>Join System <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>}</button>
+                                        <button type="button" onClick={() => setStep(1)} className="w-full py-2 mt-2 text-xs text-gray-400 hover:text-white transition-colors">Back</button>
+                                    </>
+                                )}
                             </motion.form>
                         )}
                         {mode === 'forgot' && (<motion.form key="forgot" className="space-y-4" onSubmit={step === 1 ? handleSendResetOtp : handleResetPassword}><button type="button" onClick={() => switchMode('login')} className="text-[10px] md:text-[11px] font-black text-gray-400 hover:text-white mb-4 flex items-center uppercase tracking-[0.15em] transition-colors"><ChevronRight className="w-3 h-3 rotate-180 mr-1" /> Abort Sequence</button>{step === 1 ? (<div className="space-y-4"><div className="space-y-1.5"><label className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Fleet Identity</label><div className="relative group"><Mail className="absolute left-4 top-3.5 w-4 h-4 text-gray-500 group-focus-within:text-indigo-400 transition-colors" /><input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-gray-600 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white/[0.08] focus:outline-none transition-all duration-300 shadow-inner" placeholder="pilot@foodverse.com" required /></div></div><button type="submit" disabled={loading} className={`w-full py-3.5 bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white rounded-xl font-bold tracking-wide shadow-[0_4px_20px_rgba(99,102,241,0.4)] hover:shadow-[0_6px_25px_rgba(99,102,241,0.5)] border border-indigo-400/30 transition-all text-sm ${loading ? 'opacity-70 cursor-not-allowed' : 'active:scale-[0.98]'}`}>{loading ? 'Transmitting...' : 'Send Protocol'}</button></div>) : (<div className="space-y-4"><div className="space-y-1.5"><label className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Recovery Code</label><input type="text" name="otp" value={formData.otp} onChange={handleChange} className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-3 px-4 text-white text-sm placeholder-gray-600 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white/[0.08] focus:outline-none transition-all duration-300 shadow-inner text-center tracking-widest font-mono" placeholder="----" required /></div><div className="space-y-1.5"><label className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">New Access Key</label><input type="password" name="newPassword" value={formData.newPassword} onChange={handleChange} className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-3 px-4 text-white text-sm placeholder-gray-600 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white/[0.08] focus:outline-none transition-all duration-300 shadow-inner" placeholder="New Key" required /></div><button type="submit" disabled={loading} className={`w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-xl font-bold tracking-wide shadow-[0_4px_20px_rgba(16,185,129,0.3)] hover:shadow-[0_6px_25px_rgba(16,185,129,0.5)] border border-emerald-400/30 transition-all text-sm ${loading ? 'opacity-70 cursor-not-allowed' : 'active:scale-[0.98]'}`}>{loading ? 'Re-encrypting...' : 'Lock New Key'}</button></div>)}</motion.form>)}

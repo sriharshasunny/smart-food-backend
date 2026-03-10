@@ -45,14 +45,32 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (name, email, password) => {
         try {
-            const response = await fetch(`${API_URL}/api/auth/register`, {
+            const response = await fetch(`${API_URL}/api/auth/send-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password }),
+                body: JSON.stringify({ email, type: 'register' }),
             });
             const data = await response.json();
             if (response.ok) {
-                // Auto login after register
+                return { success: true };
+            } else {
+                return { success: false, message: data.message };
+            }
+        } catch (error) {
+            return { success: false, message: 'Server error' };
+        }
+    };
+
+    const verifyRegisterOtp = async (name, email, password, otp) => {
+        try {
+            const response = await fetch(`${API_URL}/api/auth/verify-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password, otp }),
+            });
+            const data = await response.json();
+            if (response.ok) {
+                // Auto login after verify
                 setUser(data.user);
                 localStorage.setItem('user', JSON.stringify(data.user));
                 return { success: true };
@@ -70,7 +88,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, register, verifyRegisterOtp, logout, loading }}>
             {children}
         </AuthContext.Provider>
     );

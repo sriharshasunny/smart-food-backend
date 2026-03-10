@@ -1,8 +1,15 @@
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 
-// Initialize Resend
-// Note: Ensure RESEND_API_KEY is in your .env file
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Nodemailer transporter
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: 465,
+    secure: true, // true for 465, false for other ports
+    auth: {
+        user: process.env.SMTP_USER || process.env.EMAIL_USER,
+        pass: process.env.SMTP_PASS || process.env.EMAIL_PASS
+    }
+});
 
 /**
  * Send OTP Email
@@ -11,9 +18,9 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  */
 exports.sendOTP = async (email, otp) => {
     try {
-        const { data, error } = await resend.emails.send({
-            from: 'SmartFood <onboarding@resend.dev>', // Default testing domain. Change to verified domain in prod.
-            to: [email],
+        const info = await transporter.sendMail({
+            from: `"SmartFood Delivery" <${process.env.SMTP_USER || process.env.EMAIL_USER}>`,
+            to: email,
             subject: 'Your Login Code',
             html: `
             <div style="font-family: sans-serif; text-align: center; color: #333;">
@@ -26,13 +33,8 @@ exports.sendOTP = async (email, otp) => {
         `
         });
 
-        if (error) {
-            console.error("Resend OTP Error:", error);
-            throw error;
-        }
-
-        console.log(`[EmailService] OTP sent to ${email}. ID: ${data.id}`);
-        return data;
+        console.log(`[EmailService] OTP sent to ${email}. ID: ${info.messageId}`);
+        return info;
     } catch (error) {
         console.error("Failed to send OTP:", error);
         throw error;
@@ -62,9 +64,9 @@ exports.sendOrderConfirmation = async (email, order) => {
     `).join('');
 
     try {
-        const { data, error } = await resend.emails.send({
-            from: 'SmartFood Orders <onboarding@resend.dev>', // Default testing domain
-            to: [email],
+        const info = await transporter.sendMail({
+            from: `"SmartFood Orders" <${process.env.SMTP_USER || process.env.EMAIL_USER}>`,
+            to: email,
             subject: `Order Confirmed! #${orderId.toString().slice(-6)}`,
             html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 10px;">
@@ -108,18 +110,11 @@ exports.sendOrderConfirmation = async (email, order) => {
             `
         });
 
-        if (error) {
-            console.error("Resend Order Email Error:", error);
-            throw error;
-        }
-
-        console.log(`[EmailService] Order Email sent to ${email}. ID: ${data.id}`);
-        return data;
+        console.log(`[EmailService] Order Email sent to ${email}. ID: ${info.messageId}`);
+        return info;
 
     } catch (error) {
         console.error("Failed to send order email:", error);
-        // Fallback to not crashing app, but logging error is crucial
-        // In dev with unverified domain, this might fail if not sending to self
         return null;
     }
 };
