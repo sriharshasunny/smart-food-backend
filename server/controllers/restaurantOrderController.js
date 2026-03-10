@@ -13,6 +13,7 @@ exports.getRestaurantOrders = async (req, res) => {
                 order:orders!inner(*)
             `)
             .eq('restaurant_id', id)
+            .eq('order.payment_status', 'Completed')
             .order('created_at', { foreignTable: 'orders', ascending: false });
 
         if (error) throw error;

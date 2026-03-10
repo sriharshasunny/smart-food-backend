@@ -109,11 +109,15 @@ router.get('/:id/dashboard', async (req, res) => {
             .select('*', { count: 'exact', head: true })
             .eq('restaurant_id', id);
 
-        // Get Real Stats from order_items
+        // Get Real Stats from order_items (Only for Completed Payments)
         const { data: orderItems, error: statsError } = await supabase
             .from('order_items')
-            .select('price, quantity, preparation_status')
-            .eq('restaurant_id', id);
+            .select(`
+                price, quantity, preparation_status,
+                order:orders!inner(payment_status)
+            `)
+            .eq('restaurant_id', id)
+            .eq('order.payment_status', 'Completed');
 
         const revenue = (orderItems || []).reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const activeOrders = (orderItems || []).filter(item =>
