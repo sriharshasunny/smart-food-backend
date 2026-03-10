@@ -26,39 +26,47 @@ function extractPriceMax(text) {
     return m ? parseInt(m[1]) : null;
 }
 
+// ── Extract numeric limit from text ("top 10", "5 best", "show 12") ──
+function extractLimit(text) {
+    const m = text.match(/\b(?:top|best|show|get|around|first)?\s*(\d+)\b/i);
+    return m ? parseInt(m[1]) : null;
+}
+
 // ── LOCAL KEYWORD FAST-PATH ───────────────────────────────────────────────────
 function detectIntentLocally(message) {
     const m = message.toLowerCase();
+    const userLimit = extractLimit(m);
+    const limit = userLimit && userLimit > 0 ? Math.min(userLimit, 20) : 6;
 
     // Trending / popular
     if (/trending|popular|top rated|best rated|top food|recommended|what.?s hot|most ordered/i.test(m))
-        return { intent: 'trending_items', filters: {} };
+        return { intent: 'trending_items', filters: { limit } };
 
     // Veg only (be specific so we don't catch "non-veg")
     if (/\bveg\b(?!etable)(?:etarian)?.*(?:food|option|item|only|pure|meal|dish)?|only veg|pure veg|vegetarian food/i.test(m) && !/non.?veg/i.test(m))
-        return { intent: 'search_food', filters: { veg: true, limit: 8 } };
+        return { intent: 'search_food', filters: { veg: true, limit } };
 
     // Non-veg
     if (/non.?veg|chicken|mutton|fish|prawn|egg.*food|meat(?!ball)|kebab|tikka/i.test(m) && !/restaurant/i.test(m))
-        return { intent: 'search_food', filters: { veg: false, limit: 8 } };
+        return { intent: 'search_food', filters: { veg: false, limit } };
 
     // Price-capped food search ("food under 200", "items below 150", "suggest food under 200")
     const priceMax = extractPriceMax(m);
     if (priceMax && (/food|item|eat|meal|dish|suggest|show|find|order|snack/i.test(m) || m.includes('under') || m.includes('below'))) {
         const isVeg = /veg/i.test(m) && !/non.?veg/i.test(m) ? true : /non.?veg|chicken|meat/i.test(m) ? false : undefined;
-        const filters = { price_max: priceMax, limit: 8 };
+        const filters = { price_max: priceMax, limit };
         if (typeof isVeg === 'boolean') filters.veg = isVeg;
         return { intent: 'search_food', filters };
     }
 
     // Restaurant search ("top restaurants", "best restaurants", "find restaurants")
     if (/top.*restaurant|best.*restaurant|find.*restaurant|show.*restaurant|restaurant.*near|give.*restaurant/i.test(m))
-        return { intent: 'search_restaurant', filters: {} };
+        return { intent: 'search_restaurant', filters: { limit } };
 
     // Specific foods
     const foodMatch = m.match(/(?:show me |find |get |want |craving |order |best |good |suggest )?(biryani|burger|pizza|pasta|noodles|dosa|idli|sandwich|roll|momos|fried rice|manchurian|paneer|sushi|tacos?|ramen|soup|waffles?|ice cream|salad|wrap|quesadilla)\b/i);
     if (foodMatch)
-        return { intent: 'search_food', filters: { food_name: foodMatch[1], limit: 6 } };
+        return { intent: 'search_food', filters: { food_name: foodMatch[1], limit } };
 
     // Offers / deals
     if (/offer|deal|discount|coupon|promo|sale|cheap|budget|affordable|low price/i.test(m))
@@ -161,11 +169,11 @@ exports.processChatRequest = async (req, res) => {
             const combinedPrompt = `
 You are a food delivery AI assistant. Given the user's message, return a JSON object with:
 - "intent": one of: search_food, search_restaurant, get_orders, get_offers, trending_items, open_now, general_info
-- "filters": object. For search_food: food_name(string), veg(boolean), price_max(num), limit(num 6-8). For search_restaurant: restaurant_name, location.
+- "filters": object. For search_food: food_name(string), veg(boolean), price_max(num), limit(num 1-20, default 6). For search_restaurant: restaurant_name, limit(default 6).
 - "friendly_message": a warm 1-sentence response (max 15 words). For general_info, this IS the response. For others, it's a brief intro.
 - "clarification_question": only for general_info intent, same as friendly_message. Otherwise null.
 
-Rules: If veg mentioned → filters.veg=true. If non-veg/chicken/meat → filters.veg=false. Budget/cheap → price_max:200.
+Rules: If user asks for "top 10" or "5 best", set limit accordingly. If veg mentioned → filters.veg=true. If non-veg/chicken/meat → filters.veg=false. Budget/cheap → price_max:200.
 ${ctx ? `Recent chat:\n${ctx}\n` : ''}User: "${message}"
 
 Return ONLY valid JSON, no markdown.`.trim();
@@ -201,9 +209,9 @@ Return ONLY valid JSON, no markdown.`.trim();
         if (intent === 'search_food') dbResult = await advancedSearchFood(filters);
         else if (intent === 'search_restaurant') dbResult.available = await searchRestaurants(filters);
         else if (intent === 'get_orders') dbResult = await advancedGetOrders(userId, filters);
-        else if (intent === 'get_offers') dbResult.available = await getOffers();
-        else if (intent === 'trending_items') dbResult.available = await getTrendingItems();
-        else if (intent === 'open_now') dbResult.available = await searchRestaurants({ open_now: true });
+        else if (intent === 'get_offers') dbResult.available = await getOffers(filters);
+        else if (intent === 'trending_items') dbResult.available = await getTrendingItems(filters);
+        else if (intent === 'open_now') dbResult.available = await searchRestaurants({ ...filters, open_now: true });
 
         // ── Step 4: Build response ────────────────────────────────────────
         let finalData = intent === 'get_orders'
@@ -244,10 +252,10 @@ async function advancedSearchFood(filters) {
 
     // Show ALL items (available + suspended/unavailable) - include all in result
     // Try to sort by rating first; fall back to created_at if rating column missing
-    let { data, error } = await query.order('rating', { ascending: false }).limit(Math.min(filters.limit || 8, 20));
+    let { data, error } = await query.order('rating', { ascending: false }).limit(Math.min(filters.limit || 10, 20));
     if (error && error.message?.includes('rating')) {
         // rating column not yet added; fall back
-        ({ data, error } = await query.order('created_at', { ascending: false }).limit(Math.min(filters.limit || 8, 20)));
+        ({ data, error } = await query.order('created_at', { ascending: false }).limit(Math.min(filters.limit || 10, 20)));
     }
     if (error) throw error;
 
@@ -302,50 +310,60 @@ async function advancedGetOrders(userId, filters) {
     return { available, unavailable, similar, original_orders: orders };
 }
 
-async function searchRestaurants(filters) {
+async function searchRestaurants(filters = {}) {
+    const limit = filters.limit || 6;
     let query = supabase.from('restaurants').select('*, foods(*)');
     if (filters.restaurant_name) query = query.ilike('name', `%${filters.restaurant_name}%`);
     if (filters.location) query = query.ilike('address', `%${filters.location}%`);
+    if (filters.open_now) query = query.eq('is_active', true);
+
     // Show ALL restaurants (active + suspended/inactive)
-    const { data, error } = await query.order('rating', { ascending: false, nullsLast: true }).limit(10);
+    // Sort logic: active first, then by rating
+    const { data: rests, error } = await query
+        .order('is_active', { ascending: false })
+        .order('rating', { ascending: false, nullsLast: true })
+        .limit(limit);
+
     if (error) throw error;
-    (data || []).forEach(r => {
+    (rests || []).forEach(r => {
         if (r.is_active === false) r._suspended = true; // flag for UI
         if (Array.isArray(r.foods)) {
             // Show all food items for the restaurant (available + unavailable)
             r.foods = r.foods
                 .map(f => { if (f.available === false) f._suspended = true; return f; })
                 .sort((a, b) => (b.rating || 0) - (a.rating || 0) || (a._suspended ? 1 : -1))
-                .slice(0, 4);
+                .slice(0, 10); // show up to 10 foods per restaurant in chat
         }
     });
-    // Sort: active restaurants first, then suspended
-    (data || []).sort((a, b) => (a._suspended ? 1 : 0) - (b._suspended ? 1 : 0));
-    return data || [];
+    return rests || [];
 }
 
-async function getOffers() {
+async function getOffers(filters = {}) {
+    const limit = filters.limit || 6;
     // Show all items sorted by rating for deals section
     let { data, error } = await supabase.from('foods').select('*, restaurant:restaurants(*)')
-        .order('rating', { ascending: false, nullsLast: true }).limit(8);
+        .order('rating', { ascending: false, nullsLast: true }).limit(limit);
     if (error && error.message?.includes('rating')) {
         ({ data, error } = await supabase.from('foods').select('*, restaurant:restaurants(*)')
-            .order('created_at', { ascending: false }).limit(8));
+            .order('created_at', { ascending: false }).limit(limit));
     }
     if (error) throw error;
     (data || []).forEach(f => { if (f.available === false) f._suspended = true; });
+    // Sort available first
     return (data || []).sort((a, b) => (a._suspended ? 1 : 0) - (b._suspended ? 1 : 0));
 }
 
-async function getTrendingItems() {
+async function getTrendingItems(filters = {}) {
+    const limit = filters.limit || 6;
     // Show all items, best rated first (suspended shown at end)
     let { data, error } = await supabase.from('foods').select('*, restaurant:restaurants(*)')
-        .order('rating', { ascending: false, nullsLast: true }).limit(8);
+        .order('rating', { ascending: false, nullsLast: true }).limit(limit);
     if (error && error.message?.includes('rating')) {
         ({ data, error } = await supabase.from('foods').select('*, restaurant:restaurants(*)')
-            .order('created_at', { ascending: false }).limit(8));
+            .order('created_at', { ascending: false }).limit(limit));
     }
     if (error) throw error;
     (data || []).forEach(f => { if (f.available === false) f._suspended = true; });
+    // Sort available first
     return (data || []).sort((a, b) => (a._suspended ? 1 : 0) - (b._suspended ? 1 : 0));
 }
