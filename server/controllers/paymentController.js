@@ -127,10 +127,12 @@ exports.createPayment = async (req, res) => {
                     }
                 }
 
+                const isGuest = !user || !user._id;
+
                 return {
                     order_id: newOrderId,
                     food_id: isUUID(foodId) ? foodId : null,
-                    restaurant_id: isUUID(restaurantId) ? restaurantId : null,
+                    restaurant_id: isGuest ? null : (isUUID(restaurantId) ? restaurantId : null),
                     name: item.name,
                     price: item.price,
                     quantity: item.quantity,
