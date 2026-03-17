@@ -99,6 +99,7 @@ const UFOAssistant = ({ userId }) => {
       }
 
       // Physics (Login-style)
+      // ... (existing physics)
       const dx = u.targetX - u.x;
       const dy = u.targetY - u.y;
       const dist = Math.hypot(dx, dy);
@@ -116,6 +117,11 @@ const UFOAssistant = ({ userId }) => {
       u.vx *= 0.97; u.vy *= 0.97;
       u.x += u.vx; u.y += u.vy;
       u.rotation = u.vx * 0.1;
+      
+      // Intelligent Overlap Detection
+      // Check if UFO is over a food card to hide bubble
+      const elementsAtPoint = document.elementsFromPoint(u.x, u.y);
+      const isOverCard = elementsAtPoint.some(el => el.closest('.premium-card-mockup'));
       
       // Trail
       if (u.opacity > 0.1 && Math.hypot(u.vx, u.vy) > 0.2) {
@@ -139,8 +145,8 @@ const UFOAssistant = ({ userId }) => {
         ctx.restore();
       }
 
-      // Sync state for React bubble
-      setUfoPos({ x: u.x, y: u.y, opacity: u.opacity });
+      // Sync state for React bubble (hide if over card)
+      setUfoPos({ x: u.x, y: u.y, opacity: isOverCard ? 0 : u.opacity });
 
       frame = requestAnimationFrame(loop);
     };
@@ -187,7 +193,7 @@ const UFOAssistant = ({ userId }) => {
             left: ufoPos.x + 30, 
             top: ufoPos.y - 70,
             opacity: ufoPos.opacity,
-            transition: 'all 0.05s linear'
+            transition: 'opacity 0.3s ease, left 0.05s linear, top 0.05s linear'
           }}
         >
           <div className="premium-glass bg-black/80 px-4 py-2.5 rounded-2xl rounded-bl-sm border border-cyan-500/30 shadow-[0_0_20px_rgba(0,255,255,0.1)] max-w-[180px]">
@@ -226,57 +232,58 @@ const FoodGridCard = ({ food, userId, onAdd }) => {
 
   return (
     <div
-      className="group relative premium-glass rounded-[2rem] overflow-hidden card-shine
-                 hover:shadow-cyan-500/10 transition-all duration-700 ease-out flex flex-col h-full border border-white/5"
+      className="premium-card-mockup group relative bg-[#111114] rounded-[2rem] overflow-hidden 
+                 hover:shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_20px_rgba(6,182,212,0.05)] 
+                 transition-all duration-700 ease-out flex flex-col h-full border border-white/[0.03]"
     >
-      <div className="relative h-[161px] overflow-hidden bg-[#0a0a15]">
+      <div className="relative h-[165px] overflow-hidden">
         {food.image ? (
           <img
             src={food.image}
             alt={food.name}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 brightness-75 group-hover:brightness-100"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 brightness-[0.8] group-hover:brightness-100"
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl bg-gray-900">🍽️</div>
+          <div className="w-full h-full flex items-center justify-center text-4xl bg-[#1a1a1e]">🍽️</div>
         )}
 
-        <div className="absolute inset-0 bg-gradient-to-t from-[#020205] via-transparent to-transparent opacity-100" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#111114] via-transparent to-transparent opacity-100" />
         
-        {/* Match Percentage Glow */}
+        {/* Match Percentage - Mockup Style */}
         {score && (
           <div className="absolute top-4 right-4 z-20">
-            <div className="bg-cyan-500/20 backdrop-blur-md border border-cyan-500/50 text-cyan-400 px-3 py-1 rounded-full font-black text-[10px] shadow-[0_0_15px_rgba(6,182,212,0.3)] tracking-tight">
-              {score}% MATCH
+            <div className="bg-cyan-500/10 backdrop-blur-md border border-cyan-500/30 text-cyan-400 px-3 py-1 rounded-full font-bold text-[9px] shadow-[0_0_15px_rgba(6,182,212,0.1)] tracking-tighter uppercase">
+              {score}% Match
             </div>
           </div>
         )}
       </div>
 
-      <div className="p-5 flex flex-col flex-grow relative z-10">
+      <div className="p-5 flex flex-col flex-grow relative z-10 bg-[#0c0c0e]">
         <div className="flex justify-between items-start mb-2 gap-2">
-          <h3 className="text-white font-bold text-[17px] tracking-tight group-hover:text-cyan-400 transition-colors line-clamp-1">
+          <h3 className="text-gray-100 font-bold text-[16px] tracking-tight group-hover:text-cyan-400 transition-colors line-clamp-1">
             {food.name}
           </h3>
-          <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 mt-1 ${isVeg ? 'border-green-500/50' : 'border-red-500/50'}`}>
+          <div className={`w-3 h-3 rounded-full border flex items-center justify-center mt-1 scale-90 ${isVeg ? 'border-green-500/30' : 'border-red-500/30'}`}>
             <div className={`w-1.5 h-1.5 rounded-full ${isVeg ? 'bg-green-500' : 'bg-red-500'}`}></div>
           </div>
         </div>
 
-        <p className="text-gray-400/80 text-[12px] font-medium line-clamp-2 mb-6 leading-relaxed">
-          {food.description || `Exclusives from ${food.restaurant?.name || 'Central Kitchen'}`}
+        <p className="text-gray-500 text-[11px] font-medium line-clamp-2 mb-6 leading-relaxed">
+          {food.description || `Exclusives from ${food.restaurant?.name || 'Chef Specialty'}`}
         </p>
 
-        <div className="mt-auto flex items-center justify-between pt-4 border-t border-white/[0.05]">
+        <div className="mt-auto flex items-center justify-between pt-4 border-t border-white/[0.03]">
           <div className="flex flex-col">
-            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Price</span>
-            <span className="font-black text-xl text-white tracking-tight">₹{food.price}</span>
+            <span className="text-[9px] text-gray-600 font-black uppercase tracking-[0.1em]">Price</span>
+            <span className="font-black text-lg text-white tracking-tight">₹{food.price}</span>
           </div>
           <button
             onClick={() => { trackAddToCart(userId, food); onAdd(food); }}
-            className="px-6 py-2.5 bg-white/5 hover:bg-white text-white hover:text-black font-black rounded-full text-[11px] uppercase tracking-widest transition-all duration-300 border border-white/10 active:scale-95 shadow-xl"
+            className="px-5 py-2 bg-white/[0.03] hover:bg-cyan-500 text-gray-400 hover:text-white font-black rounded-xl text-[10px] uppercase tracking-widest transition-all duration-300 border border-white/5 active:scale-95 shadow-lg"
           >
-            Add
+            Order
           </button>
         </div>
       </div>
