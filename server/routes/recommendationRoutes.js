@@ -15,6 +15,7 @@ const ctrl    = require('../controllers/recommendationController');
 // ── IMPORTANT: static routes BEFORE dynamic :param routes ──
 router.get('/similar/:foodId',              ctrl.getSimilarFoodRecommendations);
 router.get('/location/:userId/:location',   ctrl.getLocationBasedRecommendations);
+router.get('/ufo-message/:userId',            ctrl.getUFOMessage);
 router.get('/:userId',                      ctrl.getPersonalizedRecommendations);
 router.post('/track',                       ctrl.trackUserActivity);
 

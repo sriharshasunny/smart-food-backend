@@ -138,4 +138,26 @@ async function getLocationRecommendations(userId, city, options = {}) {
   return getRecommendations(userId, { ...options, city });
 }
 
-module.exports = { getRecommendations, getLocationRecommendations };
+/**
+ * getUFOMessage — Generates a short quirky message for the UFO assistant.
+ */
+async function getUFOMessage(userId) {
+  const cacheKey = `ufo:${userId}`;
+  const cached = cache.get(cacheKey);
+  if (cached) return cached;
+
+  // 1. Get history and current recommendations to provide context
+  const prefs = await getUserPreferences(userId);
+  const { recommendations, strategy } = await getRecommendations(userId, { limit: 10 });
+
+  // 2. Generate quirky message
+  const { generateUFOMessage } = require('./geminiExplainer');
+  const message = await generateUFOMessage(prefs, recommendations);
+
+  // Cache for 2 hours (quippy messages don't need to change constantly)
+  cache.set(cacheKey, { message, strategy }, 2 * 60 * 60 * 1000);
+
+  return { message, strategy };
+}
+
+module.exports = { getRecommendations, getLocationRecommendations, getUFOMessage };

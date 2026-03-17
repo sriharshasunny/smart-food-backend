@@ -4,7 +4,7 @@
  * delegates to service layer, returns standardized responses.
  */
 
-const { getRecommendations, getLocationRecommendations } = require('../services/recommendationEngine');
+const { getRecommendations, getLocationRecommendations, getUFOMessage } = require('../services/recommendationEngine');
 const { getSimilarFoods }  = require('../services/locationEngine');
 const { trackActivity }    = require('../services/preferenceEngine');
 const cache                = require('../utils/cache');
@@ -122,5 +122,19 @@ exports.trackUserActivity = async (req, res) => {
   } catch (err) {
     console.error('[RecController] trackUserActivity error:', err.message);
     return res.status(500).json({ error: 'Failed to track activity', details: err.message });
+  }
+};
+
+/**
+ * GET /api/recommendations/ufo-message/:userId
+ */
+exports.getUFOMessage = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await getUFOMessage(userId);
+    return res.json({ success: true, ...result });
+  } catch (err) {
+    console.error('[RecController] getUFOMessage error:', err.message);
+    return res.status(500).json({ error: 'Failed to generate UFO message' });
   }
 };

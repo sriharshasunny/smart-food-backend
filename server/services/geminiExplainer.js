@@ -113,4 +113,31 @@ function buildFallback(prefs, topFoods, strategy) {
   return "Based on your ordering history, here are foods we think you'll absolutely love!";
 }
 
-module.exports = { generateExplanation };
+/**
+ * generateUFOMessage — Short, quirky food suggestion for the UFO bubble.
+ */
+async function generateUFOMessage(prefs, topFoods = []) {
+  if (!process.env.GEMINI_API_KEY) return "I found something tasty just for you!";
+
+  const foodNames = topFoods.slice(0, 3).map(f => f.name).join(', ');
+  const prompt = `You are a tiny, friendly UFO scout exploring the "Smart Food" website.
+    Write a single, very short, quirky food suggestion (max 10 words).
+    Context: Recommended items are ${foodNames}.
+    Style: Galactic, fun, helpful. 
+    Examples: "The Chicken Biryani nearby is literally stellar! 🚀", "My sensors detect high levels of yum in that Pizza! 🛸"
+    Do not use hashtags. Use 1 emoji maximum.`;
+
+  try {
+    const result = await Promise.race([
+      callGemini(prompt),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Gemini timeout')), 4000)
+      ),
+    ]);
+    return result;
+  } catch (err) {
+    return "Exploring your galaxy for the best eats!";
+  }
+}
+
+module.exports = { generateExplanation, generateUFOMessage };
