@@ -23,6 +23,7 @@ const chatRoutes = require('./routes/chatRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const restaurantRoutes = require('./routes/restaurantRoutes');
 const foodRoutes = require('./routes/foodRoutes');
+const recommendationRoutes = require('./routes/recommendationRoutes');
 
 app.use('/api/payment', paymentRoutes);
 app.use('/api/user', userRoutes);
@@ -30,6 +31,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/restaurant', restaurantRoutes);
 app.use('/api/food', foodRoutes);
+app.use('/api/recommendations', recommendationRoutes);
 
 // Health Check
 app.get('/', (req, res) => {
