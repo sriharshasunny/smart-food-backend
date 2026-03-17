@@ -1,14 +1,77 @@
-/**
- * Recommendations.jsx — Full production recommendations page
- * Shows personalized food picks with: AI explanation, filters (Veg/NonVeg, meal type),
- * strategy badge, pagination, and similar food discovery.
- */
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useShop } from '../context/ShopContext';
 import { API_URL } from '../config';
-import { trackAddToCart, trackView } from '../utils/trackActivity';
+import { trackAddToCart } from '../utils/trackActivity';
+import { Rocket, Sparkles, Zap, ShieldCheck, ChevronRight, Info } from 'lucide-react';
+
+// ─── CSS Visual Effects ──────────────────────────────────────────────────────
+const SPACE_CSS = `
+  @keyframes stars {
+    from { transform: translateY(0); }
+    to { transform: translateY(-50%); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(2deg); }
+  }
+  @keyframes scan {
+    0% { transform: translateY(-100%); opacity: 0; }
+    50% { opacity: 0.5; }
+    100% { transform: translateY(1000%); opacity: 0; }
+  }
+  @keyframes ufo-hover {
+    0% { transform: translate(0, 0) rotate(0); }
+    25% { transform: translate(10px, -5px) rotate(1deg); }
+    75% { transform: translate(-5px, 5px) rotate(-1deg); }
+    100% { transform: translate(0, 0) rotate(0); }
+  }
+  .star-field {
+    animation: stars 120s linear infinite;
+    background-image: 
+      radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 40px 70px, #fff, rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)),
+      radial-gradient(1.5px 1.5px at 90px 40px, #fff, rgba(0,0,0,0));
+    background-size: 200px 200px;
+    opacity: 0.3;
+  }
+  .glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .match-glow {
+    box-shadow: 0 0 15px rgba(249, 115, 22, 0.4);
+  }
+`;
+
+const StarField = () => (
+  <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#050510]">
+    <div className="absolute inset-0 star-field" />
+    <div className="absolute inset-0 bg-gradient-to-b from-blue-900/10 via-transparent to-orange-900/10" />
+  </div>
+);
+
+const FloatingUFO = ({ top, left, delay = 0, size = 40 }) => (
+  <div 
+    className="absolute pointer-events-none opacity-40 select-none hidden md:block"
+    style={{ 
+      top: `${top}%`, 
+      left: `${left}%`, 
+      animation: `ufo-hover 8s ease-in-out infinite`,
+      animationDelay: `${delay}s`
+    }}
+  >
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 4C8.68629 4 6 5.79086 6 8C6 8.52554 6.15552 9.02324 6.4344 9.46781C4.42173 10.1064 3 11.3916 3 12.875C3 15.1532 7.02944 17 12 17C16.9706 17 21 15.1532 21 12.875C21 11.3916 19.5783 10.1064 17.5656 9.46781C17.8445 9.02324 18 8.52554 18 8C18 5.79086 15.3137 4 12 4Z" fill="#ff6b00" fillOpacity="0.2" stroke="#ff8c00" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M8 8C8 6.89543 9.79086 6 12 6C14.2091 6 16 6.89543 16 8" stroke="#ff8c00" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+      <circle cx="8" cy="13" r="1.5" fill="#ffcc00" />
+      <circle cx="12" cy="13" r="1.5" fill="#ffcc00" />
+      <circle cx="16" cy="13" r="1.5" fill="#ffcc00" />
+    </svg>
+  </div>
+);
 
 // ─── Skeleton ───────────────────────────────────────────────────────────────
 const Skeleton = () => (
@@ -28,91 +91,87 @@ const Skeleton = () => (
 // ─── Food Grid Card ──────────────────────────────────────────────────────────
 const FoodGridCard = ({ food, userId, onAdd }) => {
   const isVeg = food.is_veg === true || food.is_veg === 'true' || food.isVeg;
-  const rating = parseFloat(food.rating) || 4.0;
-  const score = food._score ? `${(food._score * 100).toFixed(0)}%` : null;
+  const rating = parseFloat(food.rating) || 4.2;
+  const score = food._score ? (food._score * 100).toFixed(0) : null;
 
   return (
     <div
-      className="group bg-white/5 border border-white/10 rounded-2xl overflow-hidden
-                 hover:border-orange-500/40 hover:shadow-xl hover:shadow-orange-500/10
-                 hover:-translate-y-1 transition-all duration-300"
+      className="group relative glass-card rounded-2xl overflow-hidden
+                 hover:border-orange-500/60 hover:shadow-2xl hover:shadow-orange-500/20
+                 hover:-translate-y-2 transition-all duration-500 ease-out"
     >
-      {/* Image */}
-      <div className="relative h-48 overflow-hidden bg-gray-800">
+      {/* Light Scan Effect on card entry/hover */}
+      <div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-transparent via-orange-500/40 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-bounce pointer-events-none" />
+
+      {/* Image Section */}
+      <div className="relative h-52 overflow-hidden bg-[#0a0a15]">
         {food.image ? (
           <img
             src={food.image}
             alt={food.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 ease-out brightness-90 group-hover:brightness-105"
             loading="lazy"
             onError={e => { e.target.onerror = null; e.target.src = ''; e.target.style.display='none'; }}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-5xl bg-gray-800">🍽️</div>
+          <div className="w-full h-full flex items-center justify-center text-5xl bg-gray-900 shadow-inner italic">🍽️</div>
         )}
 
-        {/* Badges overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        <span
-          className={`absolute top-3 left-3 text-[11px] px-2 py-0.5 rounded-md font-bold
-            ${isVeg ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}
-        >
-          {isVeg ? '🟢 Veg' : '🔴 Non-Veg'}
-        </span>
-
-        {/* Match score badge */}
-        {score && (
-          <span className="absolute top-3 right-3 bg-orange-500/90 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
-            {score} match
+        {/* Dynamic Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050510] via-transparent to-transparent opacity-80" />
+        
+        {/* Badges */}
+        <div className="absolute top-3 left-3 flex flex-wrap gap-2">
+          <span className={`flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full font-black uppercase tracking-wider backdrop-blur-md border ${isVeg ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${isVeg ? 'bg-green-400' : 'bg-red-400'} shadow-[0_0_5px_currentColor]`} />
+            {isVeg ? 'Veg' : 'Non-Veg'}
           </span>
+        </div>
+
+        {/* Match Percentage - Pulsing Badge */}
+        {score && (
+          <div className="absolute top-3 right-3 flex flex-col items-end">
+            <div className="match-glow bg-gradient-to-br from-orange-400 to-red-600 text-white px-3 py-1 rounded-full font-black text-[11px] shadow-lg animate-pulse">
+              {score}% MATCH
+            </div>
+          </div>
         )}
 
-        {/* Rating */}
-        <div className="absolute bottom-3 left-3 flex items-center gap-1">
-          <span className="text-yellow-400 text-xs font-bold">★ {rating.toFixed(1)}</span>
-          {food.meal_type && food.meal_type !== 'any' && (
-            <span className="text-gray-300 text-[10px] bg-black/50 px-1.5 py-0.5 rounded capitalize">
-              {food.meal_type}
-            </span>
-          )}
+        {/* Price Tag - Floating */}
+        <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10">
+          <span className="text-white font-black text-lg">₹{food.price}</span>
         </div>
       </div>
 
-      {/* Info */}
-      <div className="p-4">
-        <p className="text-white font-semibold truncate text-base">{food.name}</p>
-        <p className="text-gray-400 text-sm truncate mt-0.5">
-          {food.restaurant?.name || food.restaurantName || 'Restaurant'}
+      {/* Info Section */}
+      <div className="p-5 border-t border-white/5 relative z-10">
+        <h3 className="text-gray-100 font-black text-lg leading-tight group-hover:text-orange-400 transition-colors duration-300 truncate">
+          {food.name}
+        </h3>
+        <p className="text-gray-400 text-xs font-medium flex items-center gap-1.5 mt-1.5 uppercase tracking-wide">
+          <Sparkles size={10} className="text-orange-500" />
+          {food.restaurant?.name || food.restaurantName || 'Galactic Kitchen'}
         </p>
-        {food.cuisine && (
-          <span className="inline-block mt-1 text-[11px] text-orange-400 bg-orange-500/10
-                           border border-orange-500/20 px-2 py-0.5 rounded-full capitalize">
-            {food.cuisine}
-          </span>
-        )}
 
-        <div className="flex items-center justify-between mt-3">
-          <span className="text-orange-400 text-lg font-bold">₹{food.price}</span>
-          <button
-            onClick={() => { trackAddToCart(userId, food); onAdd(food); }}
-            className="bg-orange-500 hover:bg-orange-400 active:scale-95 text-white text-sm
-                       font-semibold px-4 py-1.5 rounded-xl transition-all duration-200"
-          >
-            + Add
-          </button>
+        {/* Tags */}
+        <div className="flex flex-wrap gap-2 mt-3 h-6">
+          {food.cuisine && (
+            <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20 flex items-center gap-1">
+              <Zap size={8} /> {food.cuisine}
+            </span>
+          )}
+          <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1">
+            ⭐ {rating.toFixed(1)}
+          </span>
         </div>
 
-        {/* Score breakdown tooltip on hover */}
-        {food._scoreBreakdown && (
-          <div className="mt-2 pt-2 border-t border-white/5 hidden group-hover:block">
-            <p className="text-[10px] text-gray-500 font-mono">
-              🍽️ {(food._scoreBreakdown.cuisineMatch * 100).toFixed(0)}%
-              ・⭐ {(food._scoreBreakdown.rating * 100).toFixed(0)}%
-              ・📍 {(food._scoreBreakdown.distance * 100).toFixed(0)}%
-              ・💰 {(food._scoreBreakdown.priceMatch * 100).toFixed(0)}%
-            </p>
-          </div>
-        )}
+        {/* Add Button */}
+        <button
+          onClick={() => { trackAddToCart(userId, food); onAdd(food); }}
+          className="mt-5 w-full bg-gradient-to-r from-orange-600 to-pink-600 hover:from-orange-500 hover:to-pink-500 active:scale-[0.98] text-white py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 shadow-lg hover:shadow-orange-500/40 border border-white/10"
+        >
+          Inject to Cart
+        </button>
       </div>
     </div>
   );
@@ -216,40 +275,80 @@ const Recommendations = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#020205] pb-16">
-      {/* Page Header */}
-      <div className="px-4 md:px-8 pt-8 pb-4">
-        <div className="flex flex-wrap items-center gap-3 mb-2">
-          <h1 className="text-3xl md:text-4xl font-bold text-white">{strategyLabel}</h1>
-          {strategy === 'personalized' && (
-            <span className="text-sm bg-orange-500/20 border border-orange-500/30 text-orange-400
-                             px-3 py-1 rounded-full font-medium">
-              AI-Powered
-            </span>
-          )}
-          {mealType && mealIcon[mealType] && (
-            <span className="text-sm bg-white/5 border border-white/10 text-gray-300
-                             px-3 py-1 rounded-full">
-              {mealIcon[mealType]} {mealType.charAt(0).toUpperCase() + mealType.slice(1)} picks
-            </span>
-          )}
+    <div className="min-h-screen bg-[#020205] pb-24 relative overflow-hidden">
+      <style>{SPACE_CSS}</style>
+      
+      {/* Visual Backdrop */}
+      <StarField />
+      <FloatingUFO top={15} left={10} delay={0} size={60} />
+      <FloatingUFO top={25} right={5} delay={2} size={40} />
+      <FloatingUFO bottom={10} left={20} delay={4} size={50} />
+
+      {/* Scanning Light Effect (Global) */}
+      <div className="fixed inset-0 pointer-events-none z-10 overflow-hidden">
+        <div className="absolute inset-x-0 h-1 bg-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.5)] opacity-0 animate-[scan_10s_linear_infinite]" />
+      </div>
+
+      <div className="relative z-20">
+      {/* Page Header - Futuristic Aesthetic */}
+      <div className="px-4 md:px-8 pt-12 pb-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-orange-500/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3" />
+        
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
+          <div>
+            <div className="flex items-center gap-2 mb-2 text-orange-500 font-black tracking-[0.2em] text-[10px] uppercase">
+              <Zap size={14} className="fill-orange-500" /> AI Deep Scan Active
+            </div>
+            <div className="flex flex-wrap items-center gap-4">
+              <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter">
+                {strategyLabel.split(' ').slice(1).join(' ')}
+              </h1>
+              <div className="flex items-center gap-2">
+                <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] text-white font-bold flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                  </span>
+                  LIVE ENGINE
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Filters Bar - Integral Styling */}
+          <div className="flex flex-wrap gap-2 pb-2">
+            <FilterChip label="All Picks" active={vegFilter === 'all'} onClick={() => setVegFilter('all')} />
+            <div className="w-px bg-white/10 mx-1 self-stretch" />
+            <FilterChip label="Veg Only" active={vegFilter === 'veg'} onClick={() => setVegFilter('veg')} />
+            <FilterChip label="Non-Veg" active={vegFilter === 'non_veg'} onClick={() => setVegFilter('non_veg')} />
+          </div>
         </div>
 
+        {/* AI Explainer - 'Mothership Message' Style Banner */}
         {explanation && (
-          <p className="text-gray-400 text-sm italic max-w-2xl leading-relaxed">
-            <span className="text-orange-400 not-italic font-semibold">💡 </span>
-            {explanation}
-          </p>
+          <div className="mt-10 relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-orange-600 to-pink-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+            <div className="relative glass-card border-orange-500/20 p-5 md:p-6 rounded-2xl flex items-start gap-4 overflow-hidden">
+              <div className="absolute top-0 right-0 p-2 opacity-10 rotate-12 group-hover:rotate-45 transition-transform duration-700">
+                <Rocket size={80} />
+              </div>
+              <div className="bg-orange-500/20 p-3 rounded-xl border border-orange-500/30 text-orange-400 shrink-0 shadow-lg shadow-orange-500/10">
+                <Info size={24} />
+              </div>
+              <div>
+                <p className="text-white font-black text-xs uppercase tracking-widest mb-1 text-orange-400/80">Hyper-Personalized Insight</p>
+                <p className="text-gray-300 text-sm md:text-md italic leading-relaxed font-medium">
+                  "{explanation}"
+                </p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Filter Bar */}
-      <div className="px-4 md:px-8 mb-6">
-        <div className="flex flex-wrap gap-2">
-          <FilterChip label="All" active={vegFilter === 'all'} onClick={() => setVegFilter('all')} />
-          <FilterChip label="🟢 Veg" active={vegFilter === 'veg'} onClick={() => setVegFilter('veg')} />
-          <FilterChip label="🔴 Non-Veg" active={vegFilter === 'non_veg'} onClick={() => setVegFilter('non_veg')} />
-          <div className="w-px bg-white/10 mx-1 self-stretch" />
+      {/* Sub-Filters / Categories */}
+      <div className="px-4 md:px-8 mb-10 scrolling-touch overflow-x-auto hide-scrollbar">
+        <div className="flex gap-3 pb-2">
           <FilterChip label="🌅 Breakfast" active={mealFilter === 'breakfast'} onClick={() => setMealFilter(p => p === 'breakfast' ? 'all' : 'breakfast')} />
           <FilterChip label="☀️ Lunch"     active={mealFilter === 'lunch'}     onClick={() => setMealFilter(p => p === 'lunch' ? 'all' : 'lunch')} />
           <FilterChip label="🌙 Dinner"    active={mealFilter === 'dinner'}    onClick={() => setMealFilter(p => p === 'dinner' ? 'all' : 'dinner')} />
@@ -322,6 +421,7 @@ const Recommendations = () => {
             <div className="w-8 h-8 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
           </div>
         )}
+      </div>
       </div>
     </div>
   );
