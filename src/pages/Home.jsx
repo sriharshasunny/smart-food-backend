@@ -5,17 +5,34 @@ import FilterBar from '../components/FilterBar';
 import FoodCard from '../components/FoodCard';
 import RestaurantCard from '../components/RestaurantCard';
 import { useShop } from '../context/ShopContext';
+import { useAuth } from '../context/AuthContext';
 import { mockRestaurants, mockDishes, categories } from '../data/mockData';
 import { Search, MapPin, ChevronRight, Sparkles } from 'lucide-react';
 import ErrorBoundary from '../components/ErrorBoundary';
 import SkeletonCard from '../components/SkeletonCard';
-import RecommendationSection from '../components/RecommendationSection';
 
 import { API_URL } from '../config';  // Import Config
 
 const Home = () => {
-    const { addToCart, searchQuery, setSearchQuery } = useShop(); // Use Global Search
+    const { addToCart, searchQuery, setSearchQuery } = useShop();
+    const { user } = useAuth();
     const navigate = useNavigate();
+
+    // Recommendation state for Trending Picks panel
+    const [trendingRecs, setTrendingRecs] = useState([]);
+    const [loadingRecs, setLoadingRecs] = useState(false);
+
+    // Fetch recommendations for logged-in users
+    React.useEffect(() => {
+        const userId = user?._id || user?.id;
+        if (!userId) return;
+        setLoadingRecs(true);
+        fetch(`${API_URL}/api/recommendations/${userId}?limit=6`)
+            .then(r => r.json())
+            .then(data => setTrendingRecs(data.recommendations || []))
+            .catch(() => {})
+            .finally(() => setLoadingRecs(false));
+    }, [user]);
 
     // Data State
     const [dishes, setDishes] = useState([]);
@@ -263,13 +280,10 @@ const Home = () => {
             {/* Main Content Area - with Padding */}
             <div className="w-full px-1 sm:px-2 pt-0 space-y-3.5 mx-auto">
 
-                {/* Hero Banner (Offers) WITH Location Widget Embedded - Restored inside padded container */}
+                {/* Hero Banner (Offers) WITH Location Widget Embedded */}
                 <ErrorBoundary key="hero">
                     <HeroBanner topRightContent={locationWidget} />
                 </ErrorBoundary>
-
-                {/* AI Recommendation Strip */}
-                <RecommendationSection />
 
                 {/* --- Content Sections --- */}
 
@@ -387,14 +401,15 @@ const Home = () => {
                         {/* Quick Grid (Vertical Scroll) - Simple Rainbow Cards */}
                         <div ref={trendingContainerRef} data-lenis-prevent className="flex flex-col overflow-y-auto pr-1 hide-scrollbar gap-2 relative z-10 h-full pt-1 scroll-smooth overscroll-contain transform-gpu">
 
-                            {loadingData ? (
+                            {(loadingData || loadingRecs) ? (
                                 Array.from({ length: 4 }).map((_, i) => (
                                     <div key={`skel-h-${i}`} className="h-[90px] shrink-0">
                                         <SkeletonCard variant="horizontal" />
                                     </div>
                                 ))
                             ) : (
-                                filteredData.dishes.slice(0, 6).map((dish) => (
+                                // Use recommendation API results for logged-in users, fall back to regular dishes
+                                (trendingRecs.length > 0 ? trendingRecs : filteredData.dishes).slice(0, 6).map((dish) => (
                                     <div
                                         key={dish.id}
                                         className="bg-white relative overflow-hidden rounded-[1.25rem] p-2 flex gap-3 transition-transform duration-200 cursor-pointer border border-gray-100 hover:border-orange-200 hover:-translate-y-0.5 group/item items-center shrink-0 shadow-sm"
@@ -419,7 +434,7 @@ const Home = () => {
                                                 {dish.price > 300 && <span className="text-[9px] font-bold text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded-md mb-1 inline-block tracking-wider uppercase">Bestseller</span>}
 
                                                 <h4 className="font-bold text-gray-800 text-[15px] leading-tight line-clamp-1 group-hover/item:text-orange-600 transition-colors">{dish.name}</h4>
-                                                <p className="text-[10px] text-gray-400 font-medium line-clamp-1 mt-0.5">{dish.category} • {dish.isVeg ? 'Veg' : 'Non-Veg'}</p>
+                                                <p className="text-[10px] text-gray-400 font-medium line-clamp-1 mt-0.5">{dish.category || dish.cuisine} • {(dish.isVeg || dish.is_veg) ? 'Veg' : 'Non-Veg'}</p>
                                             </div>
 
                                             <div className="flex justify-between items-end">
