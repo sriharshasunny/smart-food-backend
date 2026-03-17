@@ -7,174 +7,166 @@ import { Rocket, Sparkles, Zap, ShieldCheck, ChevronRight, Info } from 'lucide-r
 
 // ─── CSS Visual Effects ──────────────────────────────────────────────────────
 const SPACE_CSS = `
-  @keyframes stars {
+  @keyframes stars-scroll {
     from { transform: translateY(0); }
-    to { transform: translateY(-50%); }
+    to { transform: translateY(-500px); }
   }
   @keyframes scan {
     0% { transform: translateY(-100%); opacity: 0; }
-    50% { opacity: 0.5; }
-    100% { transform: translateY(1000%); opacity: 0; }
+    50% { opacity: 0.3; }
+    100% { transform: translateY(100vh); opacity: 0; }
   }
-  @keyframes ufo-peek {
-    0% { transform: translate(-100px, 80%) rotate(10deg); opacity: 0; }
-    5% { opacity: 0.8; }
-    15% { transform: translate(15vw, 15vh) rotate(0deg); }
-    30% { transform: translate(60vw, 20vh) rotate(-5deg); }
-    50% { transform: translate(75vw, 50vh) rotate(5deg); }
-    70% { transform: translate(30vw, 60vh) rotate(-2deg); }
-    85% { transform: translate(10vw, 30vh) rotate(0deg); }
-    95% { opacity: 0.8; }
-    100% { transform: translate(-100px, 10vh) rotate(-10deg); opacity: 0; }
+  @keyframes ufo-bubble-in {
+    0% { transform: scale(0) translateY(20px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
   }
-  @keyframes bubble-pop {
-    0% { transform: scale(0); opacity: 0; }
-    5% { transform: scale(1.1); opacity: 1; }
-    10%, 90% { transform: scale(1); opacity: 1; }
-    100% { transform: scale(0); opacity: 0; }
-  }
-  @keyframes ufo-light-spin {
-    from { opacity: 0.3; }
-    to { opacity: 1; }
-  }
-  .star-field {
-    animation: stars 120s linear infinite;
+  .star-field-animated {
+    animation: stars-scroll 60s linear infinite;
     background-image: 
-      radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)),
-      radial-gradient(1px 1px at 40px 70px, #fff, rgba(0,0,0,0)),
-      radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)),
-      radial-gradient(1.5px 1.5px at 90px 40px, #fff, rgba(0,0,0,0));
-    background-size: 200px 200px;
-    opacity: 0.3;
+      radial-gradient(1px 1px at 25px 35px, #fff, rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 50px 80px, #fff, rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 100px 150px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+      radial-gradient(1.5px 1.5px at 150px 40px, #fff, rgba(0,0,0,0));
+    background-size: 500px 500px;
   }
-  .glass-card {
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+  .premium-glass {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
   }
-  .match-glow {
-    box-shadow: 0 0 15px rgba(249, 115, 22, 0.4);
+  .card-shine::after {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%; width: 200%; height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+    transform: rotate(45deg);
+    transition: 0.6s;
+    pointer-events: none;
   }
-  .ufo-bubble {
-    animation: bubble-pop 10s ease-in-out forwards;
+  .group:hover .card-shine::after {
+    left: 100%;
+  }
+  .ufo-message-bubble {
+    animation: ufo-bubble-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   }
   .hide-scrollbar::-webkit-scrollbar { display: none; }
   .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 `;
 
 const StarField = () => (
-  <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#050510]">
-    <div className="absolute inset-0 star-field" />
-    <div className="absolute inset-0 bg-gradient-to-b from-blue-900/10 via-transparent to-orange-900/10" />
+  <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#020205]">
+    <div className="absolute inset-0 star-field-animated opacity-40" />
+    <div className="absolute inset-0 star-field-animated opacity-20 scale-150 rotate-12" />
+    <div className="absolute inset-0 bg-gradient-to-b from-blue-950/20 via-transparent to-orange-950/20" />
   </div>
 );
 
 const UFOAssistant = ({ userId }) => {
+  const canvasRef = useRef(null);
   const [data, setData] = useState(null);
   const [active, setActive] = useState(false);
+  const ufoState = useRef({
+    x: -100, y: 100, vx: 0, vy: 0, rotation: 0,
+    targetX: 200, targetY: 200, trail: []
+  });
 
   const fetchMsg = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/recommendations/ufo-message/${userId}`);
       const json = await res.json();
       if (json.success) setData(json);
-    } catch (e) {
-      console.warn('UFO failed to fetch message');
-    }
+    } catch (e) { console.warn('UFO msg fail'); }
   }, [userId]);
 
   useEffect(() => {
-    // Show every 70 seconds for 25 seconds
-    const interval = setInterval(() => {
-      fetchMsg();
-      setActive(true);
-      setTimeout(() => setActive(false), 25000);
-    }, 70000);
+    if (!active) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let frame;
 
-    // Initial show after 2s
-    const initial = setTimeout(() => {
-      fetchMsg();
-      setActive(true);
-      setTimeout(() => setActive(false), 25000);
-    }, 2000);
+    const loop = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const u = ufoState.current;
+      
+      // Physics (Login-style)
+      const dx = u.targetX - u.x;
+      const dy = u.targetY - u.y;
+      const dist = Math.hypot(dx, dy);
+      
+      if (dist < 50) {
+        if (Math.random() < 0.01) {
+          u.targetX = Math.random() * (canvas.width - 200) + 100;
+          u.targetY = Math.random() * (canvas.height - 200) + 100;
+        }
+      } else {
+        u.vx += (dx / dist) * 0.05;
+        u.vy += (dy / dist) * 0.05;
+      }
+      
+      u.vx *= 0.98; u.vy *= 0.98;
+      u.x += u.vx; u.y += u.vy;
+      u.rotation = u.vx * 0.08;
+      
+      // Trail
+      if (Math.hypot(u.vx, u.vy) > 0.2) {
+        u.trail.push({ x: u.x, y: u.y, opacity: 0.6, size: 2 });
+      }
+      if (u.trail.length > 20) u.trail.shift();
+      u.trail.forEach(p => {
+        p.opacity -= 0.02;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(0, 255, 200, ${p.opacity})`; ctx.fill();
+      });
 
+      // Render UFO
+      ctx.save();
+      ctx.translate(u.x, u.y);
+      ctx.rotate(u.rotation);
+      ctx.shadowColor = 'rgba(0, 255, 150, 0.8)'; ctx.shadowBlur = 15;
+      ctx.font = '32px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('🛸', 0, 0);
+      ctx.restore();
+
+      frame = requestAnimationFrame(loop);
+    };
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', resize);
+    resize();
+    frame = requestAnimationFrame(loop);
+    return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', resize); };
+  }, [active]);
+
+  useEffect(() => {
+    const interval = setInterval(() => { fetchMsg(); setActive(true); setTimeout(() => setActive(false), 25000); }, 75000);
+    const initial = setTimeout(() => { fetchMsg(); setActive(true); setTimeout(() => setActive(false), 25000); }, 3000);
     return () => { clearInterval(interval); clearTimeout(initial); };
   }, [fetchMsg]);
 
-  if (!active || !data) return null;
-
   return (
-    <div 
-      className="fixed inset-0 z-0 pointer-events-none overflow-hidden"
-    >
-      <div 
-        className="absolute bottom-10 left-10"
-        style={{ 
-          animation: 'ufo-peek 25s ease-in-out forwards',
-          opacity: 0.6 // More subtle when moving over items
-        }}
-      >
-      {/* Speech Bubble */}
-      <div className="mb-4 ml-8 ufo-bubble opacity-0">
-        <div className="glass-card bg-black/80 text-white px-5 py-3 rounded-2xl rounded-bl-sm shadow-2xl relative border border-orange-500/50 max-w-[220px]">
-          <p className="text-[12px] font-bold leading-tight drop-shadow-md">
-            {data.message}
-          </p>
-          <div className="absolute -bottom-2.5 left-0 w-5 h-5 bg-black/80 border-b border-l border-orange-500/50 rotate-45" />
+    <div className="fixed inset-0 z-[100] pointer-events-none overflow-hidden">
+      <canvas ref={canvasRef} className="absolute inset-0" />
+      {active && data && (
+        <div 
+          className="absolute ufo-message-bubble"
+          style={{ 
+            left: ufoState.current.x + 30, 
+            top: ufoState.current.y - 70,
+            transition: 'all 0.1s linear'
+          }}
+        >
+          <div className="premium-glass bg-black/80 px-4 py-2.5 rounded-2xl rounded-bl-sm border border-cyan-500/30 shadow-[0_0_20px_rgba(0,255,255,0.1)] max-w-[180px]">
+            <p className="text-[11px] font-bold text-cyan-50 leading-tight">
+              {data.message}
+            </p>
+          </div>
         </div>
-      </div>
-
-      {/* 3D Realistic UFO */}
-      <svg width="100" height="70" viewBox="0 0 100 70" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-[0_20px_40px_rgba(255,140,0,0.3)] opacity-90 transition-opacity duration-1000">
-        <defs>
-          <radialGradient id="ufoGlass" cx="50%" cy="50%" r="50%" fx="40%" fy="30%">
-            <stop offset="0%" stopColor="#88CCFF" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#003366" stopOpacity="0.9" />
-          </radialGradient>
-          <linearGradient id="ufoBody" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#e0e0e0" />
-            <stop offset="50%" stopColor="#999999" />
-            <stop offset="100%" stopColor="#444444" />
-          </linearGradient>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-        
-        {/* Cockpit Shell */}
-        <path d="M30 35C30 25 38.9543 18 50 18C61.0457 18 70 25 70 35H30Z" fill="url(#ufoGlass)" stroke="#AADDFF" strokeWidth="0.5" />
-        <ellipse cx="50" cy="30" rx="12" ry="6" fill="white" fillOpacity="0.2" />
-
-        {/* Main Body (The Rim) */}
-        <path d="M10 40C10 32 27.9086 28 50 28C72.0914 28 90 32 90 40C90 48 72.0914 52 50 52C27.9086 52 10 48 10 40Z" fill="url(#ufoBody)" stroke="#333" strokeWidth="1" />
-        
-        {/* Base / Bottom Dome */}
-        <path d="M35 48C35 55 41.7157 60 50 60C58.2843 60 65 55 65 48H35Z" fill="#333" />
-        
-        {/* Lights */}
-        <circle cx="25" cy="42" r="2.5" fill="#FFD700" filter="url(#glow)">
-          <animate attributeName="opacity" values="0.2;1;0.2" dur="0.8s" repeatCount="indefinite" />
-        </circle>
-        <circle cx="50" cy="45" r="3" fill="#FF5500" filter="url(#glow)">
-          <animate attributeName="opacity" values="0.2;1;0.2" dur="1.2s" repeatCount="indefinite" />
-        </circle>
-        <circle cx="75" cy="42" r="2.5" fill="#FFD700" filter="url(#glow)">
-          <animate attributeName="opacity" values="0.2;1;0.2" dur="1s" repeatCount="indefinite" />
-        </circle>
-
-        {/* Tractor beam - subtle */}
-        <path d="M40 60 L30 150 L70 150 L60 60 Z" fill="url(#beamGrad)" opacity="0.1" />
-        <defs>
-          <linearGradient id="beamGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#FFCC00" />
-            <stop offset="100%" stopColor="transparent" />
-          </linearGradient>
-        </defs>
-      </svg>
-    </div>
+      )}
     </div>
   );
 };
@@ -190,7 +182,7 @@ const Skeleton = () => (
       <div className="h-3 bg-white/10 rounded w-1/2" />
       <div className="flex justify-between items-center mt-4">
         <div className="h-5 bg-white/10 rounded w-16" />
-        <div className="h-8 bg-orange-500/20 rounded-xl w-20" />
+        <div className="h-8 bg-cyan-500/20 rounded-xl w-20" />
       </div>
     </div>
   </div>
@@ -204,64 +196,57 @@ const FoodGridCard = ({ food, userId, onAdd }) => {
 
   return (
     <div
-      className="group relative glass-card rounded-[1.5rem] overflow-hidden
-                 hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-500 ease-out flex flex-col h-full"
+      className="group relative premium-glass rounded-[2rem] overflow-hidden card-shine
+                 hover:shadow-cyan-500/10 transition-all duration-700 ease-out flex flex-col h-full border border-white/5"
     >
-      {/* Sync with Home: Image Section (h-44) */}
       <div className="relative h-44 overflow-hidden bg-[#0a0a15]">
         {food.image ? (
           <img
             src={food.image}
             alt={food.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-90 group-hover:brightness-105"
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 brightness-75 group-hover:brightness-100"
             loading="lazy"
-            onError={e => { e.target.onerror = null; e.target.src = ''; e.target.style.display='none'; }}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl bg-gray-900 shadow-inner">🍽️</div>
+          <div className="w-full h-full flex items-center justify-center text-4xl bg-gray-900">🍽️</div>
         )}
 
-        {/* Dynamic Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-90" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#020205] via-transparent to-transparent opacity-100" />
         
-        {/* Rating Badge - Same as Home */}
-        <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 bg-black/60 px-2.5 py-1.5 rounded-lg text-yellow-400 text-[11px] font-black">
-          {rating.toFixed(1)} <Sparkles size={12} className="fill-yellow-400" />
-        </div>
-
-        {/* Match Score - Keep it but make it subtle */}
+        {/* Match Percentage Glow */}
         {score && (
-          <div className="absolute top-3 right-3">
-            <div className="bg-orange-500 text-white px-2 py-0.5 rounded-md font-black text-[9px] shadow-lg animate-pulse tracking-tighter">
+          <div className="absolute top-4 right-4 z-20">
+            <div className="bg-cyan-500/20 backdrop-blur-md border border-cyan-500/50 text-cyan-400 px-3 py-1 rounded-full font-black text-[10px] shadow-[0_0_15px_rgba(6,182,212,0.3)] tracking-tight">
               {score}% MATCH
             </div>
           </div>
         )}
       </div>
 
-      {/* Info Section - Sync with Home layout */}
-      <div className="p-4 flex flex-col flex-grow bg-white/5 border-t border-white/5">
-        <div className="flex justify-between items-start mb-1 gap-2">
-          <h3 className="text-gray-100 font-bold text-[15px] leading-tight group-hover:text-orange-400 transition-colors line-clamp-1">
+      <div className="p-5 flex flex-col flex-grow relative z-10">
+        <div className="flex justify-between items-start mb-2 gap-2">
+          <h3 className="text-white font-bold text-[17px] tracking-tight group-hover:text-cyan-400 transition-colors line-clamp-1">
             {food.name}
           </h3>
-          <div className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 mt-0.5 ${isVeg ? 'border-green-600' : 'border-red-600'}`}>
-            <div className={`w-1.5 h-1.5 rounded-full ${isVeg ? 'bg-green-600' : 'bg-red-600'}`}></div>
+          <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 mt-1 ${isVeg ? 'border-green-500/50' : 'border-red-500/50'}`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${isVeg ? 'bg-green-500' : 'bg-red-500'}`}></div>
           </div>
         </div>
 
-        <p className="text-gray-400 text-[11px] font-medium line-clamp-2 mb-4 leading-relaxed">
-          {food.description || `Special selection from ${food.restaurant?.name || 'Galactic Kitchen'}`}
+        <p className="text-gray-400/80 text-[12px] font-medium line-clamp-2 mb-6 leading-relaxed">
+          {food.description || `Exclusives from ${food.restaurant?.name || 'Central Kitchen'}`}
         </p>
 
-        {/* Price and Add - Sync with Home */}
-        <div className="mt-auto flex items-center justify-between pt-3 border-t border-white/5">
-          <span className="font-black text-lg text-white">₹{food.price}</span>
+        <div className="mt-auto flex items-center justify-between pt-4 border-t border-white/[0.05]">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Price</span>
+            <span className="font-black text-xl text-white tracking-tight">₹{food.price}</span>
+          </div>
           <button
             onClick={() => { trackAddToCart(userId, food); onAdd(food); }}
-            className="bg-orange-500/10 hover:bg-orange-500 text-orange-500 hover:text-white font-bold py-1.5 px-4 rounded-xl text-[11px] uppercase tracking-wider transition-all border border-orange-500/20"
+            className="px-6 py-2.5 bg-white/5 hover:bg-white text-white hover:text-black font-black rounded-full text-[11px] uppercase tracking-widest transition-all duration-300 border border-white/10 active:scale-95 shadow-xl"
           >
-            ADD +
+            Add
           </button>
         </div>
       </div>
@@ -276,8 +261,8 @@ const FilterChip = ({ label, active, onClick }) => (
     onClick={onClick}
     className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border
       ${active
-        ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/30'
-        : 'bg-white/5 border-white/10 text-gray-400 hover:border-orange-500/40 hover:text-white'
+        ? 'bg-cyan-500 border-cyan-500 text-white shadow-lg shadow-cyan-500/30'
+        : 'bg-white/5 border-white/10 text-gray-400 hover:border-cyan-500/40 hover:text-white'
       }`}
   >
     {label}
@@ -393,8 +378,8 @@ const Recommendations = () => {
       <div className="px-4 md:px-8 pt-8 pb-3 relative">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="flex items-center gap-2 mb-1.5 text-orange-500 font-black tracking-tighter text-[9px] uppercase opacity-70">
-              <Zap size={12} className="fill-orange-500" /> Engine Active
+            <div className="flex items-center gap-2 mb-1.5 text-cyan-500 font-black tracking-tighter text-[9px] uppercase opacity-70">
+              <Zap size={12} className="fill-cyan-500" /> Engine Active
             </div>
             <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter">
               {strategyLabel.split(' ').slice(1).join(' ')}
@@ -416,7 +401,7 @@ const Recommendations = () => {
               <select 
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-white/5 border border-white/10 text-gray-300 text-[11px] font-bold rounded-lg px-2 py-1 outline-none focus:border-orange-500 transition-colors"
+                className="bg-white/5 border border-white/10 text-gray-300 text-[11px] font-bold rounded-lg px-2 py-1 outline-none focus:border-cyan-500 transition-colors"
               >
                 <option value="match" className="bg-[#050510]">Best Match</option>
                 <option value="rating" className="bg-[#050510]">Rating</option>
@@ -430,7 +415,7 @@ const Recommendations = () => {
                 <button
                   key={type}
                   onClick={() => setMealFilter(p => p === type ? 'all' : type)}
-                  className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase transition-all border ${mealFilter === type ? 'bg-orange-500 border-orange-500 text-white shadow-[0_0_10px_rgba(249,115,22,0.4)]' : 'bg-white/5 border-white/5 text-gray-400'}`}
+                  className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase transition-all border ${mealFilter === type ? 'bg-cyan-500 border-cyan-500 text-white shadow-[0_0_10px_rgba(6,182,212,0.4)]' : 'bg-white/5 border-white/5 text-gray-400'}`}
                 >
                   {type}
                 </button>
@@ -442,8 +427,8 @@ const Recommendations = () => {
         {/* AI Explainer - Thinned */}
         {explanation && (
           <div className="mt-6 relative group max-w-3xl">
-            <div className="relative glass-card border-orange-500/10 p-4 rounded-xl flex items-center gap-3 overflow-hidden">
-              <div className="bg-orange-500/10 p-2 rounded-lg text-orange-400 shrink-0">
+            <div className="relative premium-glass border-cyan-500/10 p-4 rounded-xl flex items-center gap-3 overflow-hidden">
+              <div className="bg-cyan-500/10 p-2 rounded-lg text-cyan-400 shrink-0">
                 <Info size={18} />
               </div>
               <p className="text-gray-300 text-xs md:text-sm italic leading-relaxed font-medium">
@@ -505,9 +490,9 @@ const Recommendations = () => {
           <div className="text-center mt-8">
             <button
               onClick={handleLoadMore}
-              className="bg-orange-500/20 hover:bg-orange-500 text-orange-400 hover:text-white
-                         border border-orange-500/50 hover:border-orange-500
-                         px-8 py-3 rounded-xl font-semibold transition-all duration-300"
+              className="bg-cyan-500/10 hover:bg-white text-cyan-400 hover:text-black
+                         border border-cyan-500/50 hover:border-white
+                         px-8 py-3 rounded-xl font-bold transition-all duration-300 uppercase tracking-widest text-[11px]"
             >
               Load More Recommendations
             </button>
