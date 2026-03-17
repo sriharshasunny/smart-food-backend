@@ -236,7 +236,7 @@ const FoodGridCard = ({ food, userId, onAdd }) => {
                  hover:shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_20px_rgba(6,182,212,0.05)] 
                  transition-all duration-700 ease-out flex flex-col h-full border border-white/[0.03]"
     >
-      <div className="relative h-[185px] overflow-hidden">
+      <div className="relative h-[165px] overflow-hidden">
         {food.image ? (
           <img
             src={food.image}
@@ -252,36 +252,36 @@ const FoodGridCard = ({ food, userId, onAdd }) => {
         
         {/* Match Percentage - Mockup Style */}
         {score && (
-          <div className="absolute top-3 right-3 z-20">
-            <div className="bg-cyan-500/10 backdrop-blur-md border border-cyan-500/30 text-cyan-400 px-2 py-0.5 rounded-full font-bold text-[8px] shadow-[0_0_15px_rgba(6,182,212,0.1)] tracking-tighter uppercase">
+          <div className="absolute top-4 right-4 z-20">
+            <div className="bg-cyan-500/10 backdrop-blur-md border border-cyan-500/30 text-cyan-400 px-3 py-1 rounded-full font-bold text-[9px] shadow-[0_0_15px_rgba(6,182,212,0.1)] tracking-tighter uppercase">
               {score}% Match
             </div>
           </div>
         )}
       </div>
 
-      <div className="p-4 flex flex-col flex-grow relative z-10 bg-[#0c0c0e]">
-        <div className="flex justify-between items-start mb-1.5 gap-2">
-          <h3 className="text-gray-100 font-bold text-[15px] tracking-tight group-hover:text-cyan-400 transition-colors line-clamp-1">
+      <div className="p-5 flex flex-col flex-grow relative z-10 bg-[#0c0c0e]">
+        <div className="flex justify-between items-start mb-2 gap-2">
+          <h3 className="text-gray-100 font-bold text-[16px] tracking-tight group-hover:text-cyan-400 transition-colors line-clamp-1">
             {food.name}
           </h3>
-          <div className={`w-2.5 h-2.5 rounded-full border flex items-center justify-center mt-1 scale-90 ${isVeg ? 'border-green-500/30' : 'border-red-500/30'}`}>
+          <div className={`w-3 h-3 rounded-full border flex items-center justify-center mt-1 scale-90 ${isVeg ? 'border-green-500/30' : 'border-red-500/30'}`}>
             <div className={`w-1.5 h-1.5 rounded-full ${isVeg ? 'bg-green-500' : 'bg-red-500'}`}></div>
           </div>
         </div>
 
-        <p className="text-gray-500 text-[10px] font-medium line-clamp-2 mb-4 leading-relaxed">
+        <p className="text-gray-500 text-[11px] font-medium line-clamp-2 mb-6 leading-relaxed">
           {food.description || `Exclusives from ${food.restaurant?.name || 'Chef Specialty'}`}
         </p>
 
-        <div className="mt-auto flex items-center justify-between pt-3 border-t border-white/[0.03]">
+        <div className="mt-auto flex items-center justify-between pt-4 border-t border-white/[0.03]">
           <div className="flex flex-col">
-            <span className="text-[8px] text-gray-600 font-black uppercase tracking-[0.1em]">Price</span>
-            <span className="font-black text-base text-white tracking-tight">₹{food.price}</span>
+            <span className="text-[9px] text-gray-600 font-black uppercase tracking-[0.1em]">Price</span>
+            <span className="font-black text-lg text-white tracking-tight">₹{food.price}</span>
           </div>
           <button
             onClick={() => { trackAddToCart(userId, food); onAdd(food); }}
-            className="px-4 py-1.5 bg-white/[0.03] hover:bg-cyan-500 text-gray-400 hover:text-white font-black rounded-lg text-[9px] uppercase tracking-widest transition-all duration-300 border border-white/5 active:scale-95 shadow-lg"
+            className="px-5 py-2 bg-white/[0.03] hover:bg-cyan-500 text-gray-400 hover:text-white font-black rounded-xl text-[10px] uppercase tracking-widest transition-all duration-300 border border-white/5 active:scale-95 shadow-lg"
           >
             Order
           </button>
