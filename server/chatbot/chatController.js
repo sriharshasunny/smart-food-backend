@@ -45,9 +45,12 @@ Entity extraction rules:
 - restaurant_name: If user asks for a specific restaurant's food
 
 CRITICAL RULES:
-1. If user mentions ANY food item → intent MUST be search_food, NOT recommend_food
-2. NEVER ask for clarification — just infer the best intent and entities from context
-3. Limit must always be a number between 1 and 20
+1. If user mentions ANY food item OR any price limit OR veg/non-veg → intent MUST be "search_food"
+2. "recommend_food" is ONLY for completely vague queries with no food, no price, no filter mentioned (e.g. just "suggest something", "I am hungry")
+3. NEVER ask for clarification — just infer the best intent and entities from context
+4. Limit must always be a number between 1 and 20. Default is 8.
+5. If user says "top food items" or "best food" with no specific name → food_name should be null, but price/veg filters still apply
+6. food_name extraction: singularize ("biryanis"→"biryani", "burgers"→"burger", "ice creams"→"ice cream")
 
 Context: ${contextString || "None"}
 
@@ -107,42 +110,45 @@ function localFallback(message) {
 // ─────────────────────────────────────────────────────────────────────────────
 async function fetchFoodsFromDB(analysis) {
     const { food_name, price_max, veg, limit = 8 } = analysis;
-    const foods = [];
 
     // Support multiple food names (e.g. "ice cream,biryani")
     const foodNames = food_name
         ? food_name.split(',').map(f => f.trim().replace(/s$/i, '').trim()).filter(Boolean)
         : [];
 
-    if (foodNames.length === 0 && !price_max && veg === null) {
-        // No specific food → fetch trending
-        const { data } = await supabase.from('foods')
-            .select('*, restaurant:restaurant_id(id, name, address, rating)')
-            .eq('available', true)
-            .order('rating', { ascending: false })
-            .limit(limit);
-        return data || [];
-    }
+    const results = [];
 
-    for (const name of (foodNames.length > 0 ? foodNames : [''])) {
+    if (foodNames.length === 0) {
+        // No specific food name — apply filters broadly
         let q = supabase.from('foods')
             .select('*, restaurant:restaurant_id(id, name, address, rating)')
             .eq('available', true);
 
-        if (name) {
-            q = q.or(`name.ilike.%${name}%,category.ilike.%${name}%,description.ilike.%${name}%`);
-        }
         if (price_max) q = q.lte('price', price_max);
         if (typeof veg === 'boolean') q = q.eq('is_veg', veg);
 
-        const perName = Math.ceil(limit / Math.max(foodNames.length, 1));
+        const { data } = await q.order('rating', { ascending: false }).limit(Math.min(limit, 20));
+        return data || [];
+    }
+
+    // Fetch per food name and merge
+    for (const name of foodNames) {
+        let q = supabase.from('foods')
+            .select('*, restaurant:restaurant_id(id, name, address, rating)')
+            .eq('available', true)
+            .or(`name.ilike.%${name}%,category.ilike.%${name}%,description.ilike.%${name}%`);
+
+        if (price_max) q = q.lte('price', price_max);
+        if (typeof veg === 'boolean') q = q.eq('is_veg', veg);
+
+        const perName = Math.ceil(limit / foodNames.length);
         const { data } = await q.order('rating', { ascending: false }).limit(perName);
-        if (data) foods.push(...data);
+        if (data) results.push(...data);
     }
 
     // Dedupe by id
     const seen = new Set();
-    return foods.filter(f => {
+    return results.filter(f => {
         if (seen.has(f.id)) return false;
         seen.add(f.id);
         return true;
@@ -150,17 +156,30 @@ async function fetchFoodsFromDB(analysis) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Step 3: Fetch recommendations
+// Step 3: Fetch recommendations and post-filter by price/food name
 // ─────────────────────────────────────────────────────────────────────────────
 async function fetchRecommendations(userId, analysis) {
     if (!userId) return [];
     try {
         const recommendationEngine = require('../recommendation/recommendationEngine');
-        return await recommendationEngine.getRecommendations(userId, {
+        const recs = await recommendationEngine.getRecommendations(userId, {
             food_name: analysis.food_name,
             price_max: analysis.price_max,
             veg: analysis.veg,
             limit: analysis.limit || 8
+        });
+
+        // Post-filter: enforce price cap and food name match on recommendations too
+        return recs.filter(f => {
+            if (analysis.price_max && f.price > analysis.price_max) return false;
+            if (typeof analysis.veg === 'boolean' && f.is_veg !== analysis.veg) return false;
+            if (analysis.food_name) {
+                const names = analysis.food_name.split(',').map(n => n.trim().toLowerCase());
+                const foodNameLower = (f.name || '').toLowerCase();
+                const catLower = (f.category || '').toLowerCase();
+                return names.some(n => foodNameLower.includes(n) || catLower.includes(n));
+            }
+            return true;
         });
     } catch (e) {
         console.error('[ChatController] Recommendation engine error:', e.message);
