@@ -2,7 +2,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const supabase = require('../utils/supabase');
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HELPERS
+// HELPERS — local extraction, no API calls
 // ─────────────────────────────────────────────────────────────────────────────
 
 function extractPriceMax(text) {
@@ -11,197 +11,196 @@ function extractPriceMax(text) {
 }
 
 function extractUserLimit(text) {
-    // Match "top 10", "give 5", "show 7" etc. — NOT the price number
     const m = text.match(/(?:^|\s)(?:top|give|show|get|best|find|fetch|list)\s+(\d+)\b/i)
         || text.match(/\b(\d+)\s+(?:best|top|great|good|tasty|popular)\b/i);
     return m ? Math.min(parseInt(m[1]), 20) : null;
 }
 
 function extractVeg(text) {
-    if (/\bpure\s*veg\b|\bonly\s*veg\b|\bveg\b(?!etable)|\bvegetarian\b/i.test(text) && !/non.?veg/i.test(text)) return true;
-    if (/\bnon.?veg\b|\bchicken\b|\bmutton\b|\bfish\b|\bprawn\b|\begg\b|\bmeat\b|\bbeef\b/i.test(text)) return false;
+    if (/\bpure\s*veg\b|\bonly\s*veg\b|\bveg\b(?:etarian)?(?!\s*(?:etable|ie))\b/i.test(text) && !/non.?veg/i.test(text)) return true;
+    if (/\bnon.?veg\b|\bchicken\b|\bmutton\b|\bfish\b|\bprawn\b|\begg food\b|\bmeat\b/i.test(text)) return false;
     return null;
 }
 
-const FOOD_KEYWORDS = [
-    'biryani', 'biriyani', 'burger', 'pizza', 'pasta', 'noodles',
-    'dosa', 'idli', 'sandwich', 'roll', 'momos', 'fried rice',
-    'manchurian', 'paneer', 'sushi', 'tacos', 'ramen', 'soup',
-    'waffles', 'ice cream', 'icecream', 'salad', 'wrap', 'cake',
-    'dessert', 'coffee', 'chai', 'tea', 'dal', 'roti', 'paratha',
-    'chicken', 'mutton', 'fish', 'prawn', 'kebab', 'tikka', 'curry',
-    'samosa', 'chaat', 'bhel', 'pav bhaji', 'vada', 'upma', 'poha',
-    'halwa', 'kheer', 'gulab jamun', 'lassi', 'shake', 'smoothie',
-    'fries', 'wings', 'steak', 'shawarma', 'falafel', 'hummus',
-    'pad thai', 'sushi', 'ramen', 'dim sum', 'spring roll', 'toast',
-    'omelette', 'pancake', 'waffle', 'muffin', 'cookie', 'brownie'
+const FOOD_TERMS = [
+    'biryani','biriyani','burger','pizza','pasta','noodles','dosa','idli',
+    'sandwich','roll','momos','fried rice','manchurian','paneer','sushi',
+    'tacos','ramen','soup','waffles','ice cream','icecream','salad','wrap',
+    'cake','dessert','coffee','chai','tea','dal','roti','paratha','chicken',
+    'mutton','fish','prawn','kebab','tikka','curry','samosa','chaat','halwa',
+    'kheer','lassi','shake','smoothie','fries','wings','steak','shawarma',
+    'spring roll','toast','omelette','pancake','muffin','cookie','brownie',
+    'pav bhaji','vada','upma','poha','gulab jamun','pad thai','dim sum'
 ];
 
-function extractFoodName(text) {
+function extractFoodNames(text) {
     const lower = text.toLowerCase();
-    // Multi-word food names first
-    for (const food of FOOD_KEYWORDS.sort((a, b) => b.length - a.length)) {
-        if (lower.includes(food)) {
-            // Singularize basic plurals
-            return food.replace(/s$/, '') === food ? food : food;
+    const found = [];
+    // Sort longest first so "fried rice" beats "rice"
+    for (const term of [...FOOD_TERMS].sort((a, b) => b.length - a.length)) {
+        if (lower.includes(term) && !found.includes(term)) {
+            found.push(term);
         }
     }
+    return found; // may be empty
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STEP 1 — MODE DECISION (keyword-based, instant)
+//
+// Modes:
+//   recommendation        → personalized engine only ("top foods", "suggest something")  
+//   filtered_rec          → rec engine filtered to food names ("top biryanis")
+//   db_search             → direct DB first ("show biryani", "find pizza")
+//   hybrid                → both, merged ("biryani and salad", "suggest + filter")
+//   restaurant_search     → restaurants
+//   order_history         → orders
+//   conversation          → chat / question
+// ─────────────────────────────────────────────────────────────────────────────
+function analyzeLocally(message) {
+    const m = message.toLowerCase().trim();
+    const priceMax = extractPriceMax(m);
+    const veg = extractVeg(m);
+    const userLimit = extractUserLimit(m);
+    const limit = userLimit || 8;
+    const foodNames = extractFoodNames(m);
+
+    // ── Non-food intents first ──────────────────────────────────────────────
+    if (/\b(my order|past order|order history|previous order|show order|reorder)\b/i.test(m))
+        return { mode: 'order_history', foodNames: [], priceMax, veg, limit };
+
+    if (/\b(show restaurant|find restaurant|top restaurant|best restaurant|restaurant near|open restaurant)\b/i.test(m))
+        return { mode: 'restaurant_search', foodNames: [], priceMax, veg, limit };
+
+    // ── Explicit search keywords → DB first ────────────────────────────────
+    const isExplicitSearch = /\b(show|find|search|get me|fetch|look for|look up)\b/i.test(m);
+    if (isExplicitSearch && foodNames.length > 0)
+        return { mode: 'db_search', foodNames, priceMax, veg, limit };
+
+    // ── Vague top/suggest → recommendation engine ───────────────────────────
+    const isVague = foodNames.length === 0;
+    const isTopOrSuggest = /\b(top|best|trending|popular|suggest|recommend|hot|bestseller|what.?s good)\b/i.test(m);
+    if (isVague && isTopOrSuggest)
+        return { mode: 'recommendation', foodNames: [], priceMax, veg, limit };
+
+    // ── Named food + top/best → filtered recommendation ─────────────────────
+    if (foodNames.length > 0 && isTopOrSuggest)
+        return { mode: 'filtered_rec', foodNames, priceMax, veg, limit };
+
+    // ── Named food without "show/find" → hybrid ─────────────────────────────
+    if (foodNames.length > 0)
+        return { mode: 'hybrid', foodNames, priceMax, veg, limit };
+
+    // ── Price / veg only ────────────────────────────────────────────────────
+    if (priceMax || veg !== null)
+        return { mode: 'db_search', foodNames: [], priceMax, veg, limit };
+
+    // ── Fallback — needs Gemini ──────────────────────────────────────────────
     return null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STEP 1: LOCAL INTENT DETECTION — fast, no API, keyword based
+// STEP 1b — GEMINI FALLBACK for unclear queries
 // ─────────────────────────────────────────────────────────────────────────────
-function detectLocalIntent(message) {
-    const m = message.toLowerCase().trim();
-
-    const priceMax = extractPriceMax(m);
-    const veg = extractVeg(m);
-    const foodName = extractFoodName(m);
-    const limit = extractUserLimit(m) || 8;
-
-    // Order history
-    if (/\b(my order|past order|order history|previous order|show order|reorder|what did i order)\b/i.test(m)) {
-        return { intent: 'order_history', filters: { limit } };
-    }
-
-    // Restaurant search
-    if (/\b(show restaurant|find restaurant|top restaurant|best restaurant|restaurant near|open restaurant)\b/i.test(m)) {
-        return { intent: 'restaurant_search', filters: { limit } };
-    }
-
-    // If a specific food is mentioned — ALWAYS search_food
-    if (foodName) {
-        return { intent: 'search_food', filters: { food_name: foodName, price_max: priceMax, veg, limit } };
-    }
-
-    // Price capped food search ("food under 200", "items under 150")
-    if (priceMax && /\b(food|item|eat|meal|dish|snack|option)\b/i.test(m)) {
-        return { intent: 'search_food', filters: { food_name: null, price_max: priceMax, veg, limit } };
-    }
-
-    // Veg/non-veg only
-    if (veg !== null) {
-        return { intent: 'search_food', filters: { food_name: null, price_max: priceMax, veg, limit } };
-    }
-
-    // Trending / popular
-    if (/\b(trending|popular|hot|bestseller|most ordered|top food|top items|best food)\b/i.test(m)) {
-        return { intent: 'trending', filters: { limit } };
-    }
-
-    // Deals / offers
-    if (/\b(offer|deal|discount|cheap|budget|affordable)\b/i.test(m)) {
-        return { intent: 'search_food', filters: { food_name: null, price_max: 200, veg, limit } };
-    }
-
-    return null; // needs Gemini
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// STEP 1b: GEMINI FALLBACK — for queries that can't be locally detected
-// ─────────────────────────────────────────────────────────────────────────────
-async function detectWithGemini(message, contextString) {
+async function analyzeWithGemini(message, contextString) {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return { intent: 'general_chat', filters: {} };
+    if (!apiKey) return { mode: 'conversation', foodNames: [], priceMax: null, veg: null, limit: 8 };
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { responseMimeType: 'application/json' } });
+    const model = genAI.getGenerativeModel({
+        model: 'gemini-2.5-flash',
+        generationConfig: { responseMimeType: 'application/json' }
+    });
 
     const prompt = `
-You are the AI brain of a food delivery chatbot. Analyze the user message and return ONLY a raw JSON object.
+Food delivery chatbot. Classify the user message and return ONLY raw JSON.
 
-Intents:
-- search_food       → user wants specific food items
-- restaurant_search → user wants restaurants
-- restaurant_foods  → user wants food from a specific restaurant
-- order_history     → user wants past orders
-- trending          → user wants popular/trending items (no specific food mentioned)
-- recommend_food    → user wants personalized suggestions (no food, price, or filter)
-- general_chat      → greetings, app help, food questions, general
-- unknown           → completely unrelated
+Modes:
+- "recommendation"   → vague, no food mentioned ("suggest something", "I'm hungry")
+- "filtered_rec"     → specific food + top/best ("top biryanis", "best pizzas")
+- "db_search"        → explicit search ("show biryani", "find pizza near me")
+- "hybrid"           → food mentioned but not explicitly searching ("biryani and salad")
+- "restaurant_search"
+- "order_history"
+- "conversation"     → questions, greetings, unrelated
 
-Rules:
-- food_name: ONLY if a specific food type is mentioned. Singularize. Comma-separate multiple foods.
-- price_max: number if mentioned (e.g., "under 300" → 300)
+Extract:
+- foodNames: array of food items mentioned (singular, e.g. ["biryani","salad"]). Empty [] if none.
+- priceMax: number or null
 - veg: true/false/null
-- limit: how many results wanted (default 8, max 20)
+- limit: integer 1-20 (default 8)
 
-Context: ${contextString || "None"}
+Context: ${contextString || 'None'}
 User: "${message}"
 
 Return ONLY:
-{
-  "intent": "...",
-  "food_name": null,
-  "price_max": null,
-  "veg": null,
-  "limit": 8,
-  "restaurant_name": null
-}`;
+{"mode":"...","foodNames":[],"priceMax":null,"veg":null,"limit":8}`;
 
     try {
         const result = await model.generateContent(prompt);
         const parsed = JSON.parse(result.response.text().replace(/```json|```/g, '').trim());
-        console.log('[ChatController] Gemini:', parsed);
-        return { intent: parsed.intent || 'general_chat', filters: parsed };
+        console.log('[ChatController] Gemini classify:', parsed);
+        return {
+            mode: parsed.mode || 'conversation',
+            foodNames: parsed.foodNames || [],
+            priceMax: parsed.priceMax || null,
+            veg: parsed.veg ?? null,
+            limit: Math.min(parseInt(parsed.limit) || 8, 20)
+        };
     } catch (e) {
-        console.error('[ChatController] Gemini error:', e.message);
-        return { intent: 'general_chat', filters: {} };
+        console.error('[ChatController] Gemini classify error:', e.message);
+        return { mode: 'conversation', foodNames: [], priceMax: null, veg: null, limit: 8 };
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STEP 2: DIRECT DATABASE QUERY
+// STEP 2a — RECOMMENDATION ENGINE (personalized via engine)
 // ─────────────────────────────────────────────────────────────────────────────
-async function queryFoodsFromDB(filters) {
-    const { food_name, price_max, veg, limit = 8 } = filters;
+async function fetchFromRecommendationEngine(userId, analysis) {
+    if (!userId) return [];
+    try {
+        const engine = require('../recommendation/recommendationEngine');
+        const recs = await engine.getRecommendations(userId, {
+            limit: Math.min(analysis.limit * 4, 80) // fetch extra for filtering
+        });
+        return applyFilters(recs, analysis);
+    } catch (e) {
+        console.error('[ChatController] Rec engine error:', e.message);
+        return [];
+    }
+}
 
-    const foodNames = food_name
-        ? food_name.split(',').map(f => f.trim()).filter(Boolean)
-        : [];
-
+// ─────────────────────────────────────────────────────────────────────────────
+// STEP 2b — DATABASE SEARCH (direct, exact)
+// ─────────────────────────────────────────────────────────────────────────────
+async function fetchFromDB(analysis) {
+    const { foodNames, priceMax, veg, limit } = analysis;
     const cap = Math.min(parseInt(limit) || 8, 20);
 
     if (foodNames.length === 0) {
-        // No specific food — apply broad filters
+        // No food name — fetch with only price/veg filters
         let q = supabase.from('foods')
-            .select(`
-                id, name, price, is_veg, rating, description, image,
-                available, category,
-                restaurant:restaurant_id(id, name, address, rating, image)
-            `)
+            .select('id, name, price, is_veg, rating, description, image, available, category, restaurant:restaurant_id(id, name, address, rating, image)')
             .eq('available', true);
-
-        if (typeof price_max === 'number') q = q.lte('price', price_max);
+        if (priceMax) q = q.lte('price', priceMax);
         if (typeof veg === 'boolean') q = q.eq('is_veg', veg);
-
-        const { data, error } = await q.order('rating', { ascending: false, nullsLast: true }).limit(cap);
-        if (error) console.error('[QueryFoods] DB error:', error.message);
+        const { data } = await q.order('rating', { ascending: false, nullsLast: true }).limit(cap);
         return data || [];
     }
 
-    // Fetch each food name separately then merge
-    const perName = Math.max(Math.ceil(cap / foodNames.length), 3);
-    const results = [];
+    // Separate query per food name, then merge
+    const perName = Math.max(Math.ceil(cap / foodNames.length), 4);
     const seen = new Set();
+    const results = [];
 
     for (const name of foodNames) {
         let q = supabase.from('foods')
-            .select(`
-                id, name, price, is_veg, rating, description, image,
-                available, category,
-                restaurant:restaurant_id(id, name, address, rating, image)
-            `)
+            .select('id, name, price, is_veg, rating, description, image, available, category, restaurant:restaurant_id(id, name, address, rating, image)')
             .eq('available', true)
             .or(`name.ilike.%${name}%,category.ilike.%${name}%`);
-
-        if (typeof price_max === 'number') q = q.lte('price', price_max);
+        if (priceMax) q = q.lte('price', priceMax);
         if (typeof veg === 'boolean') q = q.eq('is_veg', veg);
-
-        const { data, error } = await q.order('rating', { ascending: false, nullsLast: true }).limit(perName);
-        if (error) console.error(`[QueryFoods] Error for "${name}":`, error.message);
-
+        const { data } = await q.order('rating', { ascending: false, nullsLast: true }).limit(perName);
         for (const f of (data || [])) {
             if (!seen.has(f.id)) { seen.add(f.id); results.push(f); }
         }
@@ -210,19 +209,70 @@ async function queryFoodsFromDB(filters) {
     return results.slice(0, cap);
 }
 
-async function queryRestaurantsFromDB(filters) {
-    const { restaurant_name, limit = 8 } = filters;
+// ─────────────────────────────────────────────────────────────────────────────
+// Filter helper — apply price, veg, food name filters on any array
+// ─────────────────────────────────────────────────────────────────────────────
+function applyFilters(items, analysis) {
+    const { foodNames, priceMax, veg, limit } = analysis;
+    const cap = Math.min(parseInt(limit) || 8, 20);
+
+    let filtered = items;
+
+    if (priceMax) filtered = filtered.filter(f => f.price <= priceMax);
+    if (typeof veg === 'boolean') filtered = filtered.filter(f => f.is_veg === veg);
+
+    if (foodNames.length > 0) {
+        filtered = filtered.filter(f => {
+            const n = (f.name || '').toLowerCase();
+            const c = (f.category || '').toLowerCase();
+            return foodNames.some(term => n.includes(term) || c.includes(term));
+        });
+    }
+
+    return filtered.slice(0, cap);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Merge two lists, deduplicate by id
+// ─────────────────────────────────────────────────────────────────────────────
+function mergeResults(primary, secondary, cap) {
+    const seen = new Set();
+    const merged = [];
+    for (const f of [...primary, ...secondary]) {
+        if (!seen.has(f.id) && merged.length < cap) {
+            seen.add(f.id);
+            merged.push(f);
+        }
+    }
+    return merged;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STEP 2c — HYBRID: rec engine filtered, fill from DB if not enough
+// ─────────────────────────────────────────────────────────────────────────────
+async function fetchHybrid(userId, analysis) {
+    const cap = Math.min(parseInt(analysis.limit) || 8, 20);
+
+    const [recResults, dbResults] = await Promise.all([
+        fetchFromRecommendationEngine(userId, analysis),
+        fetchFromDB(analysis)
+    ]);
+
+    return mergeResults(recResults, dbResults, cap);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STEP 3 — Restaurant & Order helpers
+// ─────────────────────────────────────────────────────────────────────────────
+async function fetchRestaurants(analysis) {
     let q = supabase.from('restaurants')
         .select('id, name, address, rating, cuisine_type, image, is_active, foods(id, name, price, is_veg, rating)')
         .eq('is_active', true);
-
-    if (restaurant_name) q = q.ilike('name', `%${restaurant_name}%`);
-
-    const { data } = await q.order('rating', { ascending: false, nullsLast: true }).limit(Math.min(parseInt(limit) || 8, 15));
+    const { data } = await q.order('rating', { ascending: false, nullsLast: true }).limit(Math.min(analysis.limit || 8, 15));
     return data || [];
 }
 
-async function queryOrdersFromDB(userId) {
+async function fetchOrders(userId) {
     if (!userId) return [];
     const { data } = await supabase.from('orders')
         .select('*, items:order_items(*, food:foods(*, restaurant:restaurants(*)))')
@@ -233,51 +283,49 @@ async function queryOrdersFromDB(userId) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STEP 3: FRIENDLY MESSAGE via Gemini
+// STEP 4 — Friendly message (Gemini or local fallback)
 // ─────────────────────────────────────────────────────────────────────────────
-async function buildMessage(message, filters, resultCount) {
+async function buildMessage(userMessage, analysis, resultCount) {
     if (resultCount === 0) {
-        const what = filters.food_name ? `"${filters.food_name}"` : 'that';
+        const what = analysis.foodNames.length > 0 ? analysis.foodNames.join(' or ') : 'that';
         return `I couldn't find anything for ${what}. Try a broader search! 🔍`;
     }
-
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return buildFallbackMessage(filters, resultCount);
+    if (!apiKey) return localMessage(analysis, resultCount);
 
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        const result = await model.generateContent(
-            `Food delivery chatbot. User asked: "${message}". Found ${resultCount} results. 
-Write ONE warm, natural, concise sentence (max 12 words) introducing the results. No markdown, no emoji overload.`
+        const r = await model.generateContent(
+            `Food delivery chatbot. User said: "${userMessage}". Found ${resultCount} results. Write ONE natural, warm sentence (max 12 words) introducing results. No markdown.`
         );
-        return result.response.text().trim();
+        return r.response.text().trim();
     } catch {
-        return buildFallbackMessage(filters, resultCount);
+        return localMessage(analysis, resultCount);
     }
 }
 
-function buildFallbackMessage(filters, resultCount) {
-    if (!resultCount) return "No results found. Try a different search! 🔍";
-    if (filters.food_name) return `Found ${resultCount} great ${filters.food_name} options for you! 😋`;
-    if (filters.price_max) return `Here are ${resultCount} options under ₹${filters.price_max}! 🎉`;
-    if (filters.veg === true) return `Here are ${resultCount} veg options for you! 🥦`;
-    if (filters.veg === false) return `Here are ${resultCount} non-veg options for you! 🍗`;
-    return `Here are ${resultCount} top picks right now! 🔥`;
+function localMessage(analysis, count) {
+    if (!count) return "No results found. Try a different search! 🔍";
+    const names = analysis.foodNames;
+    if (names.length > 0) return `Here are ${count} great ${names.join(' and ')} options for you! 😋`;
+    if (analysis.priceMax) return `Found ${count} options under ₹${analysis.priceMax}! 🎉`;
+    if (analysis.veg === true) return `Here are ${count} veg options for you! 🥦`;
+    if (analysis.veg === false) return `Here are ${count} non-veg options for you! 🍗`;
+    return `Here are ${count} top picks for you! 🔥`;
 }
 
 async function generateConversationalReply(message) {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return "I'm your food delivery assistant! Ask me for food, restaurants, or orders.";
-
+    if (!apiKey) return "Hi! I'm your food delivery assistant. Ask me for food, restaurants, or your orders! 🍴";
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        const result = await model.generateContent(
+        const r = await model.generateContent(
             `You are a professional food delivery assistant. User said: "${message}".
-Respond in 1-2 natural sentences. If food related, answer helpfully. If unrelated, politely redirect to ordering food.`
+Respond naturally in 1-2 sentences. Answer food questions helpfully. For unrelated topics, politely redirect to food ordering.`
         );
-        return result.response.text().trim();
+        return r.response.text().trim();
     } catch {
         return "I'm here to help you find great food! What are you craving today? 🍴";
     }
@@ -295,61 +343,82 @@ exports.processChatRequest = async (req, res) => {
             .map(m => `${m.sender === 'user' ? 'User' : 'Bot'}: ${m.content || m.message}`)
             .join('\n');
 
-        // STEP 1: Detect intent — local first, Gemini fallback
-        let intent, filters;
-        const local = detectLocalIntent(message);
-        if (local) {
-            intent = local.intent;
-            filters = local.filters;
-            console.log(`[ChatController] Local intent: ${intent}`, filters);
-        } else {
-            const gemini = await detectWithGemini(message, contextString);
-            intent = gemini.intent;
-            filters = gemini.filters || {};
-            console.log(`[ChatController] Gemini intent: ${intent}`, filters);
+        // ── Step 1: Classify intent/mode ─────────────────────────────────
+        let analysis = analyzeLocally(message);
+        if (!analysis) {
+            analysis = await analyzeWithGemini(message, contextString);
         }
+        console.log(`[ChatController] Mode: ${analysis.mode}`, { foods: analysis.foodNames, price: analysis.priceMax, veg: analysis.veg, limit: analysis.limit });
 
-        // Save user message
+        // Save user message (non-blocking)
         if (userId) supabase.from('chat_history').insert({ user_id: userId, role: 'user', content: message, created_at: new Date().toISOString() }).then(() => {});
 
-        // STEP 2: Execute the correct tool
+        // ── Step 2: Execute the correct tool ─────────────────────────────
         let type = 'text', data = [], replyMessage = '';
 
-        switch (intent) {
-            case 'search_food':
-            case 'trending': {
-                data = await queryFoodsFromDB(filters);
-                replyMessage = await buildMessage(message, filters, data.length);
+        switch (analysis.mode) {
+
+            // Personalized engine only (no food filter)
+            case 'recommendation': {
+                let recs = await fetchFromRecommendationEngine(userId, analysis);
+                if (recs.length < analysis.limit) {
+                    // Fallback to high-rated DB items if engine returns little
+                    const db = await fetchFromDB({ ...analysis, foodNames: [] });
+                    recs = mergeResults(recs, db, analysis.limit);
+                }
+                data = recs;
                 type = 'search_food';
+                replyMessage = await buildMessage(message, analysis, data.length);
                 break;
             }
 
-            case 'recommend_food': {
-                // For recommendations — fetch top-rated foods from DB (no recommendation engine)
-                data = await queryFoodsFromDB({ ...filters, food_name: null, limit: filters.limit || 8 });
-                replyMessage = data.length > 0
-                    ? `Here are some top picks we think you'll love! ✨`
-                    : "No recommendations found right now. Try searching something specific!";
+            // Rec engine → filter by food name → fill from DB if short
+            case 'filtered_rec': {
+                let recs = await fetchFromRecommendationEngine(userId, { ...analysis, limit: 80 });
+                let filtered = applyFilters(recs, analysis);
+
+                if (filtered.length < analysis.limit) {
+                    // Not enough from recommendations — supplement with DB
+                    const db = await fetchFromDB(analysis);
+                    filtered = mergeResults(filtered, db, analysis.limit);
+                }
+                data = filtered;
                 type = 'search_food';
+                replyMessage = await buildMessage(message, analysis, data.length);
                 break;
             }
 
-            case 'restaurant_search':
-            case 'restaurant_foods': {
-                data = await queryRestaurantsFromDB(filters);
+            // DB first (explicit search): "show biryani", "find pizza"
+            case 'db_search': {
+                data = await fetchFromDB(analysis);
+                type = 'search_food';
+                replyMessage = await buildMessage(message, analysis, data.length);
+                break;
+            }
+
+            // Hybrid: rec engine filtered + DB merged
+            case 'hybrid': {
+                data = await fetchHybrid(userId, analysis);
+                type = 'search_food';
+                replyMessage = await buildMessage(message, analysis, data.length);
+                break;
+            }
+
+            case 'restaurant_search': {
+                data = await fetchRestaurants(analysis);
+                type = 'search_restaurant';
                 replyMessage = data.length > 0
                     ? `Found ${data.length} restaurants for you! 🏪`
                     : "No restaurants found. Try a broader search!";
-                type = 'search_restaurant';
                 break;
             }
 
             case 'order_history': {
-                data = await queryOrdersFromDB(userId);
-                replyMessage = data.length > 0
-                    ? `Here are your recent ${data.length} orders! 📦`
-                    : "I couldn't find any recent orders for your account.";
+                data = await fetchOrders(userId);
                 type = 'get_orders';
+                replyMessage = data.length > 0
+                    ? `Here are your last ${data.length} orders! 📦`
+                    : "I couldn't find any recent orders for your account.";
                 break;
             }
 
@@ -360,7 +429,7 @@ exports.processChatRequest = async (req, res) => {
             }
         }
 
-        // Save bot reply
+        // Save bot reply (non-blocking)
         if (userId) supabase.from('chat_history').insert({ user_id: userId, role: 'assistant', content: replyMessage, created_at: new Date().toISOString() }).then(() => {});
 
         return res.json({
@@ -382,9 +451,8 @@ exports.getChatHistory = async (req, res) => {
     const { userId } = req.query;
     if (!userId) return res.json([]);
     try {
-        const { data } = await supabase.from('chat_history')
-            .select('*').eq('user_id', userId)
-            .order('created_at', { ascending: true }).limit(200);
+        const { data } = await supabase.from('chat_history').select('*')
+            .eq('user_id', userId).order('created_at', { ascending: true }).limit(200);
         return res.json(data || []);
     } catch (err) {
         return res.status(500).json({ error: err.message });
