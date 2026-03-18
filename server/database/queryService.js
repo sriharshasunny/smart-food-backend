@@ -84,6 +84,53 @@ class QueryService {
             return [];
         }
     }
+
+    /**
+     * Search restaurants broadly
+     */
+    async searchRestaurants(filters = {}, queryText = "", limit = 10) {
+        try {
+            let query = supabase.from('restaurants').select('*, foods(id, name, price, is_veg, rating)');
+            query = query.eq('is_active', true);
+
+            if (queryText) {
+                query = query.ilike('name', `%${queryText}%`);
+            }
+            if (filters.budget) {
+                // If the user specifies "under 300", we can try finding restaurants that have foods under 300
+                // For simplicity let's just sort by rating, but you can build advanced joins.
+            }
+            query = query.order('rating', { ascending: false }).limit(limit);
+
+            const { data } = await query;
+            return data || [];
+        } catch(e) {
+            console.error("QueryService.searchRestaurants Error:", e);
+            return [];
+        }
+    }
+
+    /**
+     * Fetch all foods specifically linked to one Restaurant
+     */
+    async getFoodsByRestaurant(restaurantName, limit = 20) {
+        try {
+            // First find the restaurant
+            const { data: rest } = await supabase.from('restaurants').select('id, name').ilike('name', `%${restaurantName}%`).limit(1).single();
+            if(!rest) return [];
+
+            const { data } = await supabase.from('foods')
+                 .select('*, restaurant:restaurant_id(id, name, address, rating)')
+                 .eq('restaurant_id', rest.id)
+                 .eq('available', true)
+                 .limit(limit);
+                 
+            return data || [];
+        } catch(e) {
+            console.error("QueryService.getFoodsByRestaurant Error:", e);
+            return [];
+        }
+    }
 }
 
 module.exports = new QueryService();

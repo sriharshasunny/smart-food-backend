@@ -42,7 +42,7 @@ exports.processChatRequest = async (req, res) => {
         const actions = actionService.determineActions(intent, data);
 
         // 6. Response Building & Gemini Professional Tone Generation (for top levels)
-        if (intent === 'general_chat' || intent === 'food_question') {
+        if (intent === 'general_chat') {
             friendlyMessage = "I am your intelligent food delivery assistant! Let me know if you want recommendations, want to search for food, or need help with a past order.";
         } else if (intent === 'order_history') {
             friendlyMessage = data.length > 0 ? "Here are your recent orders." : "I couldn't find any recent orders.";
@@ -50,8 +50,13 @@ exports.processChatRequest = async (req, res) => {
             friendlyMessage = "Based on your preferences and recent history, here are some great matches available right now.";
         } else if (intent === 'search_food') {
             friendlyMessage = "Here is what I found based on your search.";
-        } else if (intent === 'restaurant_info') {
-            friendlyMessage = "Here are some top restaurants.";
+        } else if (intent === 'restaurant_search') {
+            friendlyMessage = "I found these restaurants matching your request.";
+        } else if (intent === 'restaurant_foods') {
+            friendlyMessage = "Here is the menu from this restaurant.";
+        } else if (['food_question', 'restaurant_question', 'app_help', 'unknown'].includes(intent)) {
+            // Generative Answer Edge cases
+            friendlyMessage = await intentService.answerQuestion(message, intent);
         }
 
         const finalResponsePayload = responseBuilder.build(

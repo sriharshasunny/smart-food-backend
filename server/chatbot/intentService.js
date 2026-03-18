@@ -28,7 +28,7 @@ class IntentService {
 
     /**
      * Detects intent using Gemini with context awareness.
-     * Supported intents: recommend_food, search_food, filter_food, restaurant_info, add_to_cart, order_history, track_order, general_chat, food_question
+     * Supported intents: recommend_food, search_food, restaurant_search, restaurant_foods, order_history, add_to_cart, remove_cart, track_order, food_question, restaurant_question, app_help, general_chat, unknown
      */
     async detectIntent(message, contextString = "") {
         if (!this.model) return { intent: this.detectLocalIntent(message) || 'general_chat' };
@@ -36,15 +36,19 @@ class IntentService {
         const prompt = `
 You are a classification layer for a food delivery app.
 Classify the user's latest message into exactly ONE of these intents:
-- recommend_food (asking for recommendations)
-- search_food (searching for a specific food)
-- filter_food (adding filters)
-- restaurant_info
-- add_to_cart
+- recommend_food (asking for food recommendations)
+- search_food (searching for specific foods)
+- restaurant_search (searching for restaurants)
+- restaurant_foods (fetching foods from a specific restaurant)
 - order_history
+- add_to_cart
+- remove_cart
 - track_order
-- food_question
+- food_question (general questions about a food, e.g. "is this spicy?", "what is pizza?")
+- restaurant_question
+- app_help (asking how ordering works)
 - general_chat
+- unknown (completely unrelated prompt that shouldn't be answered by a food delivery bot)
 
 If the user is asking for recommendations or searching for food, but their query is too vague (e.g. "Suggest food"), 
 you MUST ask a brief clarifying question (e.g. "Veg or non veg?", "What's your budget?", "Any specific cuisine?").
@@ -71,6 +75,31 @@ Respond strictly with JSON format:
         } catch (error) {
             console.error('[IntentService] Gemini error:', error.message);
             return { intent: this.detectLocalIntent(message) || 'general_chat' };
+        }
+    }
+
+    /**
+     * Answers general questions conversationally using Gemini.
+     */
+    async answerQuestion(message, intentCategory) {
+        if (!this.model) return "I can only help you order food right now.";
+        
+        const systemPrompt = `
+You are a friendly, professional AI assistant for a food delivery app.
+The user's intent was classified as: ${intentCategory}.
+User message: "${message}"
+
+If they are asking about how the app works, be helpful and explain ordering.
+If they ask about food details (like what is pizza/is this spicy), answer informatively and naturally.
+If they ask something completely unrelated (unknown), be polite and briefly answer if you know, but politely remind them you are a food app assistant.
+Keep the response under 3 sentences. Be extremely natural, avoiding robotic lists.`;
+
+        try {
+            const result = await this.model.generateContent(systemPrompt);
+            return result.response.text().trim();
+        } catch (error) {
+            console.error('[IntentService] Generative error:', error.message);
+            return "I'm having a little trouble thinking of an answer right now, but I can still help you find great food!";
         }
     }
 }
