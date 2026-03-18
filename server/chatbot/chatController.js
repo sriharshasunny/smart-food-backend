@@ -4,6 +4,7 @@ const entityExtractor = require('./entityExtractor');
 const recommendationConnector = require('./recommendationConnector');
 const actionService = require('./actionService');
 const responseBuilder = require('./responseBuilder');
+const advancedRecommendationEngine = require('../recommendation/recommendationEngine');
 
 exports.processChatRequest = async (req, res) => {
     try {
@@ -13,30 +14,34 @@ exports.processChatRequest = async (req, res) => {
         }
 
         // 1. Context & Memory
-        contextManager.saveMessage(userId, 'user', message); // non-blocking async
+        contextManager.saveMessage(userId, 'user', message);
         const historyData = await contextManager.getRecentHistory(userId, 5);
         const contextString = contextManager.buildContextString(historyData);
 
         // 2. Intent Detection
-        const intent = await intentService.detectIntent(message, contextString);
+        const intentResult = await intentService.detectIntent(message, contextString);
+        // intentResult could be old string from fast-path or object from Gemini
+        const intent = typeof intentResult === 'object' ? intentResult.intent : intentResult;
         console.log(`[ChatController] Detected Intent: ${intent}`);
+
+        // Handle Conversational Intelligence Follow-ups
+        if (typeof intentResult === 'object' && intentResult.requires_clarification && intentResult.clarification_question) {
+             contextManager.saveMessage(userId, 'assistant', intentResult.clarification_question);
+             return res.json(responseBuilder.build(intent, [], intentResult.clarification_question, []));
+        }
 
         // 3. Entity Extraction
         const filters = await entityExtractor.extractFilters(message, contextString);
-        console.log(`[ChatController] Extracted Filters:`, filters);
-
-        // Optional: cold start handling could go here
-        // if no history and general intent -> return trending
 
         // 4. Recommendation Integration / Action Execution
         let data = [];
         let friendlyMessage = "";
 
-        // If general info or general chat, try getting a friendly generic response from context
         if (intent === 'general_chat') {
             friendlyMessage = "I am your food delivery assistant! Let me know if you want recommendations, want to search for food, or need help with a past order.";
         } else if (intent === 'recommend_food') {
-            data = await recommendationConnector.getTrendingItems(filters);
+            // DELEGATING TO ADVANCED RECOMMENDATION ENGINE
+            data = await advancedRecommendationEngine.getRecommendations(userId, 6, filters);
         } else if (intent === 'search_food' || intent === 'filter_food') {
             data = await recommendationConnector.advancedSearchFood(filters);
         } else if (intent === 'restaurant_info') {
@@ -55,9 +60,7 @@ exports.processChatRequest = async (req, res) => {
             appliedFilters: Object.keys(filters).length ? filters : undefined
         });
 
-        // Save assistant response
         contextManager.saveMessage(userId, 'assistant', finalResponsePayload.message);
-
         return res.json(finalResponsePayload);
 
     } catch (error) {

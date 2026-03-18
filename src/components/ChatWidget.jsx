@@ -12,14 +12,25 @@ import { optimizeImage } from '../utils/imageOptimizer';
 
 const pulseGlow = `
 @keyframes pulse-glow {
-  0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.5); }
+  70% { box-shadow: 0 0 0 20px rgba(139, 92, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+}
+
+@keyframes float-orb {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(3deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
 }
 
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(15px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 `;
 
@@ -433,23 +444,23 @@ const ChatWidget = () => {
 
     return (
         <>
-            {/* ── Floating Trigger ── */}
+            <style>{pulseGlow}</style>
+            {/* ── Floating UFO Trigger ── */}
             <button
                 onClick={() => { setIsOpen(o => !o); setUnread(0); }}
-                className="fixed bottom-6 right-6 z-50 w-14 h-14 flex items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 shadow-2xl shadow-orange-400/40 hover:scale-110 active:scale-95 transition-all duration-200"
+                className="fixed bottom-6 right-6 z-[60] w-16 h-16 flex items-center justify-center rounded-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 shadow-[0_10px_30px_rgba(139,92,246,0.3)] hover:shadow-[0_15px_40px_rgba(139,92,246,0.5)] active:scale-95 transition-all duration-300 border-[2px] border-white/30 backdrop-blur-md group"
+                style={{ animation: 'float-orb 4s ease-in-out infinite, pulse-glow 3s infinite' }}
             >
                 {isOpen ? (
-                    <X size={22} className="text-white" />
+                    <X size={26} className="text-white drop-shadow-md" />
                 ) : (
-                    <div className="relative">
-                        <MessageCircle size={24} className="fill-white text-white" />
+                    <div className="relative flex items-center justify-center w-full h-full">
+                        <Bot size={28} className="text-white drop-shadow-lg group-hover:rotate-12 transition-transform duration-300" />
                         {unread > 0 && (
-                            <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 border-2 border-white flex items-center justify-center text-[9px] font-black text-white">{unread}</span>
+                            <span className="absolute -top-3 -right-3 min-w-[20px] h-[20px] px-1 rounded-full bg-rose-500 border-[2px] border-white flex items-center justify-center text-[10px] font-black text-white shadow-md">{unread}</span>
                         )}
-                        {/* Pulse ring */}
-                        <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5">
-                            <span className="animate-ping absolute inset-0 rounded-full bg-orange-300 opacity-70" />
-                        </span>
+                        {/* Core UFO glow */}
+                        <div className="absolute inset-2 bg-white/20 rounded-full blur-sm mix-blend-overlay"></div>
                     </div>
                 )}
             </button>
@@ -457,24 +468,23 @@ const ChatWidget = () => {
             {/* ── Chat Window ── */}
             {isOpen && (
                 <div className={`
-                    fixed bottom-24 right-4 md:right-6 z-50 flex flex-col font-sans
-                    bg-[#f8fafc] border border-gray-200/80 rounded-[1.75rem] overflow-hidden
-                    shadow-[0_20px_60px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.06)]
-                    transition-all duration-300
-                    ${isExpanded ? 'w-[95vw] md:w-[580px] h-[85vh] max-h-[880px]' : 'w-[92vw] md:w-[400px] h-[640px] max-h-[78vh]'}
+                    fixed bottom-28 right-4 md:right-6 z-50 flex flex-col font-sans
+                    bg-white/60 backdrop-blur-2xl border border-white/50 rounded-[2rem] overflow-hidden
+                    shadow-[0_8px_32px_rgba(0,0,0,0.1)]
+                    transition-all duration-300 animate-slide-up origin-bottom-right
+                    ${isExpanded ? 'w-[95vw] md:w-[600px] h-[85vh] max-h-[880px]' : 'w-[92vw] md:w-[420px] h-[680px] max-h-[80vh]'}
                 `}>
 
-                    {/* ── Header ── matches navbar style */}
-                    <style>{pulseGlow}</style>
-                    <div className="flex items-center justify-between px-4 py-4 bg-white border-b border-gray-100 shrink-0">
+                    {/* ── Header ── matches glassmorphism style */}
+                    <div className="flex items-center justify-between px-5 py-4 bg-white/40 backdrop-blur-md border-b border-white/40 shrink-0">
                         <div className="flex items-center gap-3">
-                            {/* Bot avatar */}
+                            {/* UFO Bot avatar */}
                             <div className="relative">
                                 <div
-                                    className="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center shadow-lg shadow-orange-200/50"
+                                    className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-300/50 border-2 border-white/50"
                                     style={{ animation: 'pulse-glow 2s infinite' }}
                                 >
-                                    <Sparkles size={20} className="text-white drop-shadow-sm" />
+                                    <Bot size={22} className="text-white drop-shadow-sm" />
                                 </div>
                                 <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 border-[2.5px] border-white rounded-full shadow-sm" />
                             </div>
@@ -573,15 +583,15 @@ const ChatWidget = () => {
                                             <div className={`flex gap-2.5 ${isUser ? 'justify-end' : 'justify-start'}`}>
 
                                                 {!isUser && (
-                                                    <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm shadow-orange-200">
-                                                        <Bot size={13} className="text-white" />
+                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm shadow-purple-200 border border-white/50">
+                                                        <Bot size={14} className="text-white" />
                                                     </div>
                                                 )}
 
-                                                <div className="max-w-[88%]">
-                                                    <div className={`px-3.5 py-2.5 rounded-2xl shadow-sm ${isUser
-                                                        ? 'bg-orange-500 text-white rounded-tr-md shadow-orange-200'
-                                                        : 'bg-white text-gray-700 rounded-tl-md border border-gray-100'
+                                                <div className="max-w-[88%] animate-fade-in">
+                                                    <div className={`px-4 py-3 rounded-2xl shadow-sm ${isUser
+                                                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-tr-md shadow-purple-200'
+                                                        : 'bg-white/80 backdrop-blur-md text-gray-800 rounded-tl-md border border-white'
                                                         }`}>
                                                         {renderContent(msg, isLatest)}
                                                     </div>
@@ -598,13 +608,13 @@ const ChatWidget = () => {
 
                                 {/* Loading */}
                                 {loading && (
-                                    <div className="flex items-center gap-2.5">
-                                        <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center flex-shrink-0 shadow-sm shadow-orange-200">
-                                            <Bot size={13} className="text-white" />
+                                    <div className="flex items-center gap-2.5 animate-fade-in">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center flex-shrink-0 shadow-sm shadow-purple-200 border border-white/50">
+                                            <Bot size={14} className="text-white" />
                                         </div>
-                                        <div className="bg-white border border-gray-100 px-4 py-3 rounded-2xl rounded-tl-md flex items-center gap-1.5 shadow-sm">
+                                        <div className="bg-white/80 backdrop-blur-md border border-white px-5 py-3.5 rounded-2xl rounded-tl-md flex items-center gap-1.5 shadow-sm">
                                             {[0, 1, 2].map(i => (
-                                                <span key={i} className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
+                                                <span key={i} className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
                                             ))}
                                         </div>
                                     </div>
@@ -627,28 +637,28 @@ const ChatWidget = () => {
                             )}
 
                             {/* ── Input Bar ── */}
-                            <div className="px-3 pb-3 pt-2 bg-white border-t border-gray-100 shrink-0">
-                                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-2xl px-1 py-1 focus-within:border-orange-300 focus-within:ring-2 focus-within:ring-orange-100 transition-all">
+                            <div className="px-4 pb-4 pt-3 bg-white/50 backdrop-blur-lg border-t border-white/40 shrink-0">
+                                <div className="flex items-center gap-2 bg-white/80 border border-white shadow-sm rounded-full px-1.5 py-1.5 focus-within:border-purple-300 focus-within:ring-4 focus-within:ring-purple-100/50 transition-all">
                                     <input
                                         ref={inputRef}
                                         type="text"
                                         value={input}
                                         onChange={e => setInput(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && !e.shiftKey && submitMessage(input)}
-                                        placeholder="Ask for biryani, veg dishes, orders..."
-                                        className="flex-1 bg-transparent text-gray-700 text-[13px] px-3 py-2 focus:outline-none placeholder-gray-400 min-w-0"
+                                        placeholder="Ask for recommendations..."
+                                        className="flex-1 bg-transparent text-gray-800 text-[14px] px-4 py-2 focus:outline-none placeholder-gray-400 min-w-0 font-medium"
                                     />
                                     <button
                                         onClick={() => submitMessage(input)}
                                         disabled={loading || !input.trim()}
-                                        className="w-9 h-9 rounded-xl bg-orange-500 hover:bg-orange-600 disabled:bg-gray-200 flex items-center justify-center text-white transition-all active:scale-90 shadow-sm shadow-orange-200 disabled:shadow-none flex-shrink-0"
+                                        className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:from-gray-300 disabled:to-gray-300 flex items-center justify-center text-white transition-all active:scale-90 shadow-md shadow-purple-200 disabled:shadow-none flex-shrink-0"
                                     >
-                                        <Send size={15} className="translate-x-px -translate-y-px" />
+                                        <Send size={16} className="translate-x-0.5 -translate-y-px pl-0.5" />
                                     </button>
                                 </div>
-                                <div className="flex items-center justify-center gap-1 mt-1.5">
-                                    <Zap size={8} className="text-orange-400 opacity-60" />
-                                    <p className="text-[9px] text-gray-400">Powered by Gemini AI</p>
+                                <div className="flex items-center justify-center gap-1 mt-2">
+                                    <Sparkles size={10} className="text-purple-400 opacity-80" />
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Powered by Gemini AI Engine</p>
                                 </div>
                             </div>
                         </>

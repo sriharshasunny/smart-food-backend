@@ -31,39 +31,45 @@ class IntentService {
      * Supported intents: recommend_food, search_food, filter_food, restaurant_info, add_to_cart, order_help, track_order, general_chat
      */
     async detectIntent(message, contextString = "") {
-        const local = this.detectLocalIntent(message);
-        if (local && !contextString) return local; // Optimistic return if no complex context
-
-        if (!this.model) return local || 'general_chat';
+        if (!this.model) return { intent: this.detectLocalIntent(message) || 'general_chat' };
 
         const prompt = `
 You are a classification layer for a food delivery app.
 Classify the user's latest message into exactly ONE of these intents:
-- recommend_food (asking for trending, popular, or general recommendations)
-- search_food (searching for a specific food, e.g., "biryani", "pizza", "show me veg food")
-- filter_food (adding filters to a previous search, e.g., "under 200", "make it spicy")
-- restaurant_info (asking about restaurants, "open now", "near me")
-- add_to_cart (asking to add items to cart / prepare to buy)
-- order_help (asking about previous orders, reordering)
-- track_order (where is my active order)
-- general_chat (greetings, off-topic, general queries like "I am hungry")
+- recommend_food (asking for recommendations)
+- search_food (searching for a specific food)
+- filter_food (adding filters)
+- restaurant_info
+- add_to_cart
+- order_help
+- track_order
+- general_chat
+
+If the user is asking for recommendations or searching for food, but their query is too vague (e.g. "Suggest food"), 
+you MUST ask a brief clarifying question (e.g. "Veg or non veg?", "What's your budget?", "Any specific cuisine?").
+If it's already specific enough, set requires_clarification to false.
 
 Recent Context:
 ${contextString}
 
 Latest User Message: "${message}"
 
-Respond strictly with JSON format: {"intent": "detected_intent_here"}
+Respond strictly with JSON format:
+{
+  "intent": "detected_intent_here",
+  "requires_clarification": boolean,
+  "clarification_question": "Short question here if needed, else null"
+}
 `;
 
         try {
             const result = await this.model.generateContent(prompt);
             const text = result.response.text().replace(/```json|```/g, '').trim();
             const parsed = JSON.parse(text);
-            return parsed.intent || 'general_chat';
+            return parsed; // Returns { intent, requires_clarification, clarification_question }
         } catch (error) {
             console.error('[IntentService] Gemini error:', error.message);
-            return local || 'general_chat';
+            return { intent: this.detectLocalIntent(message) || 'general_chat' };
         }
     }
 }
