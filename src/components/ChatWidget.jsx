@@ -335,7 +335,7 @@ const ChatWidget = () => {
     const renderContent = (msg, isLatest) => {
         const isAI = msg.sender === 'ai';
 
-        if (['search_food', 'get_offers', 'trending_items'].includes(msg.type)) {
+        if (['search_food', 'recommend_food', 'food_results', 'get_offers', 'trending_items'].includes(msg.type)) {
             const foods = msg.data || [];
             return (
                 <div className="w-full flex flex-col gap-2.5">
