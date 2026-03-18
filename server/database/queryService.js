@@ -76,7 +76,8 @@ class QueryService {
                 .eq('available', true);
 
              if (queryText) {
-                 query = query.ilike('name', `%${queryText}%`);
+                 const cleanText = queryText.replace(/s$/i, '').trim(); // Prevent "ice creams" missing "ice cream"
+                 query = query.or(`name.ilike.%${cleanText}%,category.ilike.%${cleanText}%,description.ilike.%${cleanText}%`);
              }
              if (filters.price_max) {
                  query = query.lte('price', filters.price_max);

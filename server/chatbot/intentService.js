@@ -50,9 +50,8 @@ Classify the user's latest message into exactly ONE of these intents:
 - general_chat
 - unknown (completely unrelated prompt that shouldn't be answered by a food delivery bot)
 
-If the user is asking for recommendations or searching for food, but their query is too vague (e.g. "Suggest food"), 
-you MUST ask a brief clarifying question (e.g. "Veg or non veg?", "What's your budget?", "Any specific cuisine?").
-If it's already specific enough, set requires_clarification to false.
+If the user is completely vague (e.g., just says "food", "suggest something", "I am hungry"), you MUST set requires_clarification to true, and provide a clarification_question asking what they want.
+CRITICAL: If the user states ANY specific food (e.g., "ice cream", "pizza", "biryani", "best burgers", "chicken under 500") or any specific restaurant, YOU MUST STRICTLY set requires_clarification to FALSE and clarification_question to null. Do NOT use clarification_question to say "Searching for...". 
 
 Recent Context:
 ${contextString}
@@ -63,7 +62,7 @@ Respond strictly with JSON format:
 {
   "intent": "detected_intent_here",
   "requires_clarification": boolean,
-  "clarification_question": "Short question here if needed, else null"
+  "clarification_question": "Short question here ONLY if requires_clarification is true, else null"
 }
 `;
 
