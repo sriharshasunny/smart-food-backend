@@ -34,7 +34,7 @@ function extractLimit(text) {
 
 // ── Broader food keyword list ─────────────────────────────────────────────────
 const FOOD_KEYWORDS = [
-    'biryani', 'biriyani', 'burger', 'pizza', 'pasta', 'noodles', 'dosa', 'idli',
+    'biryani', 'biriyani', 'birayni', 'burger', 'pizza', 'pasta', 'noodles', 'dosa', 'idli',
     'sandwich', 'roll', 'momos', 'fried rice', 'manchurian', 'paneer', 'sushi',
     'taco', 'tacos', 'ramen', 'soup', 'waffle', 'waffles', 'ice cream', 'salad',
     'wrap', 'quesadilla', 'shawarma', 'haleem', 'korma', 'kebab', 'tikka', 'dal',
@@ -43,9 +43,6 @@ const FOOD_KEYWORDS = [
 ];
 
 // ── LOCAL KEYWORD FAST-PATH — single-pass accumulator ────────────────────────
-// Collects ALL signals (food_name, veg, price_max, limit) in one pass so
-// a query like "best biryanis under 350 non veg" correctly returns
-// { food_name: 'biryani', veg: false, price_max: 350, limit: 6 }
 function detectIntentLocally(message) {
     const m = message.toLowerCase();
 
@@ -56,12 +53,8 @@ function detectIntentLocally(message) {
         return { intent: 'open_now', filters: {} };
     if (/top.*restaurant|best.*restaurant|find.*restaurant|show.*restaurant|restaurant.*near|give.*restaurant/i.test(m))
         return { intent: 'search_restaurant', filters: { limit: extractLimit(m) || 6 } };
-    if (/trending|popular|top rated|best rated|top food|what.?s hot|most ordered/i.test(m) && !/biryani|burger|pizza|pasta|noodles|dosa|idli|chicken|mutton|fish|prawn/.test(m))
-        return { intent: 'trending_items', filters: { limit: extractLimit(m) || 6 } };
-    if (/\boffer|deal|discount|coupon|promo|sale\b/i.test(m))
-        return { intent: 'get_offers', filters: {} };
-
-    // ── Accumulate food-search signals in one pass ──
+    
+    // Accumulate food-search signals in one pass
     const userLimit = extractLimit(m);
     const limit = userLimit && userLimit > 0 ? Math.min(userLimit, 20) : 6;
     const filters = { limit };
@@ -72,8 +65,8 @@ function detectIntentLocally(message) {
     for (const kw of sortedKeywords) {
         const re = new RegExp(`\\b${kw.replace(/ /g, '\\s+')}s?\\b`, 'i');
         if (re.test(m)) {
-            // Normalise biriyani → biryani, tacos → taco, etc.
-            filters.food_name = kw === 'biriyani' ? 'biryani' : kw.replace(/s$/, '');
+            // Normalise biriyani/birayni → biryani, tacos → taco, etc.
+            filters.food_name = (kw === 'biriyani' || kw === 'birayni') ? 'biryani' : kw.replace(/s$/, '');
             hasSignal = true;
             break;
         }
@@ -89,10 +82,22 @@ function detectIntentLocally(message) {
     const priceMax = extractPriceMax(m);
     if (priceMax) { filters.price_max = priceMax; hasSignal = true; }
 
-    // 4. Only return local intent if we picked up at least one food signal
+    // 4. Sort / Rating signals (e.g. "top rated biryani")
+    if (hasSignal && /top rated|best rated|highest rated|popular/i.test(m)) {
+        filters.sort_by = 'rating';
+    }
+
+    // If a food signal was found, return search_food
     if (hasSignal) return { intent: 'search_food', filters };
 
-    // Generic "show veg / non-veg food" even without specific keyword
+    // ── Trending / popular (Only if NO specific food keyword found) ──
+    if (/trending|popular|top rated|best rated|top food|what.?s hot|most ordered/i.test(m))
+        return { intent: 'trending_items', filters: { limit: extractLimit(m) || 6 } };
+
+    if (/\boffer|deal|discount|coupon|promo|sale\b/i.test(m))
+        return { intent: 'get_offers', filters: {} };
+
+    // Generic "show veg / non-veg food"
     if (/\bveg\b.*(?:food|option|item|only|pure|meal|dish)|only veg|pure veg|vegetarian food/i.test(m) && !isNonVeg)
         return { intent: 'search_food', filters: { veg: true, limit } };
 
