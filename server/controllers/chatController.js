@@ -26,15 +26,20 @@ function getIntentMessage(intent, filters, count) {
         case 'food_search':
         case 'mixed_food_search':
         case 'recommendation':
-            const name = filters.food_name ? `**${filters.food_name}**` : 'food';
+        case 'category_filter':
+        case 'price_filter':
+        case 'rating_filter':
+        case 'combo_search':
+        case 'comparison':
+            const name = filters.food_name ? `**${filters.food_name}**` : 'top choices';
             const price = filters.price_max ? ` under ₹${filters.price_max}` : '';
-            return `Found ${count} ${name} options${price} for you! 🍽️`;
+            return `Got it! Fetching the best ${name} options${price} for you... 🍽️`;
         case 'restaurant_search':
-            return `Here are ${count} restaurants that match your search! 🏪`;
+            return `Searching for the top restaurants nearby... 🏪`;
         case 'get_offers':
-            return `Found ${count} great deals! 🏷️ Grab them while they last.`;
+            return `Looking for the latest deals and discounts for you! 🏷️`;
         case 'trending_items':
-            return `Here's what's hot right now! 🔥 (${count} items)`;
+            return `Checking what's hot in your area right now! 🔥`;
         case 'get_orders':
             return `Here are your recent orders 📦. Want to reorder?`;
         case 'open_now':
@@ -84,9 +89,9 @@ INTENTS: food_search, restaurant_search, recommendation, get_orders, get_offers,
 
 OUTPUT SCHEMA:
 {
-  "intent": "food_search" | "restaurant_search" | "get_orders" | "get_offers" | "trending_items" | "greeting",
+  "intent": "food_search" | "restaurant_search" | "recommendation" | "category_filter" | "price_filter" | "get_orders" | "get_offers" | "trending_items" | "greeting" | "unknown",
   "foods": [],
-  "category": "veg" | "nonveg" | null,
+  "category": "veg" | "nonveg" | "dessert" | "drinks" | null,
   "price_max": number | null,
   "rating_min": number | null,
   "location": string | null,
@@ -106,11 +111,8 @@ User Query: "${message}"`;
             const result = await generateWithRetry(model, systemPrompt);
             const parsed = JSON.parse(result.response.text().replace(/```json|```/g, '').trim());
             
-            if (parsed.intent === 'greeting') {
-                const msg = "Hey! 👋 I'm **SmartBot**. What are you craving today?";
-                saveChatHistory(userId, 'assistant', msg);
-                return res.json({ type: 'text', message: msg });
-            }
+            // ── Step 2: Database Execution (with interactive delay) ──
+            await new Promise(r => setTimeout(r, 800)); 
 
             intent = parsed.intent;
             filters = {
@@ -121,6 +123,20 @@ User Query: "${message}"`;
                 sort_by: parsed.sort_by,
                 limit: 8
             };
+
+            if (intent === 'greeting') {
+                const reply = "Hey! 👋 I'm **SmartBot**. What are you craving today?";
+                saveChatHistory(userId, 'assistant', reply);
+                return res.json({ type: 'text', message: reply });
+            }
+
+            // Broad Mapping to DB Intents
+            const searchIntents = ['food_search', 'mixed_food_search', 'recommendation', 'category_filter', 'price_filter', 'rating_filter', 'combo_search', 'comparison'];
+            if (searchIntents.includes(intent)) {
+                intent = 'search_food';
+            } else if (intent === 'restaurant_search') {
+                intent = 'search_restaurant';
+            }
         } catch (aiErr) {
             console.error('[Chat] Gemini fail:', aiErr.message);
             intent = 'trending_items';
@@ -129,7 +145,7 @@ User Query: "${message}"`;
 
         // ── DB EXECUTION ──
         let results = [];
-        if (intent === 'food_search' || intent === 'recommendation') {
+        if (intent === 'search_food') {
             let q = supabase.from('foods').select('*, restaurant:restaurants!inner(*)').eq('available', true).eq('restaurant.is_active', true);
             if (filters.food_name) {
                 const words = filters.food_name.split(',').map(w => w.trim()).filter(Boolean);
