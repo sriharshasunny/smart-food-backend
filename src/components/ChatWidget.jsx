@@ -236,10 +236,17 @@ const ChatWidget = () => {
     const [selDate, setSelDate] = useState(null);
     const [activeChip, setActiveChip] = useState(null);
 
+    const CHAT_V = 'v2_black_orange_pure';
     const storageKey = `smartbot_${user?.id || 'guest'}`;
 
     const [messages, setMessages] = useState(() => {
         try {
+            // Force clear old history version if logic changes
+            if (localStorage.getItem('chat_v_flag') !== CHAT_V) {
+                localStorage.removeItem(storageKey);
+                localStorage.setItem('chat_v_flag', CHAT_V);
+                return [{ type: 'text', content: "Hey! 👋 I'm **SmartBot** — your AI food guide. What are you craving today?", sender: 'ai', timestamp: new Date() }];
+            }
             const saved = JSON.parse(localStorage.getItem(storageKey) || '[]');
             return saved.length > 0
                 ? saved.map(m => ({ ...m, timestamp: new Date(m.timestamp) }))

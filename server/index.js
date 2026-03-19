@@ -33,7 +33,6 @@ app.use('/api/restaurant', restaurantRoutes);
 app.use('/api/food', foodRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 
-// Health Check
 app.get('/', (req, res) => {
     res.send('Smart Food Backend is Running!');
 });
