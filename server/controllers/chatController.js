@@ -28,59 +28,75 @@ function extractPriceMax(text) {
 
 // ── Extract numeric limit from text ("top 10", "5 best", "show 12") ──
 function extractLimit(text) {
-    const m = text.match(/\b(?:top|best|show|get|around|first)?\s*(\d+)\b/i);
+    const m = text.match(/\b(?:top|best|show|get|around|first)?\s*(\d{1,2})\b/i);
     return m ? parseInt(m[1]) : null;
 }
 
-// ── LOCAL KEYWORD FAST-PATH ───────────────────────────────────────────────────
+// ── Broader food keyword list ─────────────────────────────────────────────────
+const FOOD_KEYWORDS = [
+    'biryani', 'biriyani', 'burger', 'pizza', 'pasta', 'noodles', 'dosa', 'idli',
+    'sandwich', 'roll', 'momos', 'fried rice', 'manchurian', 'paneer', 'sushi',
+    'taco', 'tacos', 'ramen', 'soup', 'waffle', 'waffles', 'ice cream', 'salad',
+    'wrap', 'quesadilla', 'shawarma', 'haleem', 'korma', 'kebab', 'tikka', 'dal',
+    'curry', 'pulao', 'paratha', 'uttapam', 'pav bhaji', 'chole', 'rajma',
+    'samosa', 'dhokla', 'vada', 'chicken', 'mutton', 'fish', 'prawn'
+];
+
+// ── LOCAL KEYWORD FAST-PATH — single-pass accumulator ────────────────────────
+// Collects ALL signals (food_name, veg, price_max, limit) in one pass so
+// a query like "best biryanis under 350 non veg" correctly returns
+// { food_name: 'biryani', veg: false, price_max: 350, limit: 6 }
 function detectIntentLocally(message) {
     const m = message.toLowerCase();
-    const userLimit = extractLimit(m);
-    const limit = userLimit && userLimit > 0 ? Math.min(userLimit, 20) : 6;
 
-    // Trending / popular
-    if (/trending|popular|top rated|best rated|top food|recommended|what.?s hot|most ordered/i.test(m))
-        return { intent: 'trending_items', filters: { limit } };
-
-    // Veg only (be specific so we don't catch "non-veg")
-    if (/\bveg\b(?!etable)(?:etarian)?.*(?:food|option|item|only|pure|meal|dish)?|only veg|pure veg|vegetarian food/i.test(m) && !/non.?veg/i.test(m))
-        return { intent: 'search_food', filters: { veg: true, limit } };
-
-    // Non-veg
-    if (/non.?veg|chicken|mutton|fish|prawn|egg.*food|meat(?!ball)|kebab|tikka/i.test(m) && !/restaurant/i.test(m))
-        return { intent: 'search_food', filters: { veg: false, limit } };
-
-    // Price-capped food search ("food under 200", "items below 150", "suggest food under 200")
-    const priceMax = extractPriceMax(m);
-    if (priceMax && (/food|item|eat|meal|dish|suggest|show|find|order|snack/i.test(m) || m.includes('under') || m.includes('below'))) {
-        const isVeg = /veg/i.test(m) && !/non.?veg/i.test(m) ? true : /non.?veg|chicken|meat/i.test(m) ? false : undefined;
-        const filters = { price_max: priceMax, limit };
-        if (typeof isVeg === 'boolean') filters.veg = isVeg;
-        return { intent: 'search_food', filters };
-    }
-
-    // Restaurant search ("top restaurants", "best restaurants", "find restaurants")
-    if (/top.*restaurant|best.*restaurant|find.*restaurant|show.*restaurant|restaurant.*near|give.*restaurant/i.test(m))
-        return { intent: 'search_restaurant', filters: { limit } };
-
-    // Specific foods
-    const foodMatch = m.match(/(?:show me |find |get |want |craving |order |best |good |suggest )?(biryani|burger|pizza|pasta|noodles|dosa|idli|sandwich|roll|momos|fried rice|manchurian|paneer|sushi|tacos?|ramen|soup|waffles?|ice cream|salad|wrap|quesadilla)\b/i);
-    if (foodMatch)
-        return { intent: 'search_food', filters: { food_name: foodMatch[1], limit } };
-
-    // Offers / deals
-    if (/offer|deal|discount|coupon|promo|sale|cheap|budget|affordable|low price/i.test(m))
-        return { intent: 'get_offers', filters: {} };
-
-    // Orders
+    // ── Non-food intents: check first so they short-circuit cleanly ──
     if (/my order|past order|order history|previous order|reorder|what did i order|show order/i.test(m))
         return { intent: 'get_orders', filters: {} };
-
-    // Open now
     if (/open now|open today|open at night|what.?s open/i.test(m))
         return { intent: 'open_now', filters: {} };
+    if (/top.*restaurant|best.*restaurant|find.*restaurant|show.*restaurant|restaurant.*near|give.*restaurant/i.test(m))
+        return { intent: 'search_restaurant', filters: { limit: extractLimit(m) || 6 } };
+    if (/trending|popular|top rated|best rated|top food|what.?s hot|most ordered/i.test(m) && !/biryani|burger|pizza|pasta|noodles|dosa|idli|chicken|mutton|fish|prawn/.test(m))
+        return { intent: 'trending_items', filters: { limit: extractLimit(m) || 6 } };
+    if (/\boffer|deal|discount|coupon|promo|sale\b/i.test(m))
+        return { intent: 'get_offers', filters: {} };
 
-    return null; // needs Gemini
+    // ── Accumulate food-search signals in one pass ──
+    const userLimit = extractLimit(m);
+    const limit = userLimit && userLimit > 0 ? Math.min(userLimit, 20) : 6;
+    const filters = { limit };
+    let hasSignal = false;
+
+    // 1. Food name — scan the keyword list
+    const sortedKeywords = [...FOOD_KEYWORDS].sort((a, b) => b.length - a.length); // longest first
+    for (const kw of sortedKeywords) {
+        const re = new RegExp(`\\b${kw.replace(/ /g, '\\s+')}s?\\b`, 'i');
+        if (re.test(m)) {
+            // Normalise biriyani → biryani, tacos → taco, etc.
+            filters.food_name = kw === 'biriyani' ? 'biryani' : kw.replace(/s$/, '');
+            hasSignal = true;
+            break;
+        }
+    }
+
+    // 2. Veg / non-veg flag
+    const isNonVeg = /non.?veg/i.test(m);
+    const isVeg = /\bveg(etarian)?\b/i.test(m) && !isNonVeg;
+    if (isNonVeg) { filters.veg = false; hasSignal = true; }
+    else if (isVeg) { filters.veg = true; hasSignal = true; }
+
+    // 3. Price cap
+    const priceMax = extractPriceMax(m);
+    if (priceMax) { filters.price_max = priceMax; hasSignal = true; }
+
+    // 4. Only return local intent if we picked up at least one food signal
+    if (hasSignal) return { intent: 'search_food', filters };
+
+    // Generic "show veg / non-veg food" even without specific keyword
+    if (/\bveg\b.*(?:food|option|item|only|pure|meal|dish)|only veg|pure veg|vegetarian food/i.test(m) && !isNonVeg)
+        return { intent: 'search_food', filters: { veg: true, limit } };
+
+    return null; // hand off to Gemini
 }
 
 // ── Friendly message for each intent (no Gemini needed) ─────────────────────
@@ -92,12 +108,15 @@ function getFastMessage(intent, filters, resultCount) {
     if (intent === 'get_offers') return `Found ${resultCount} great deals for you! 🏷️ Grab them before they're gone.`;
     if (intent === 'get_orders') return `Here are your recent orders 📦. Want to reorder something?`;
     if (intent === 'open_now') return `These restaurants are open right now! 🏪`;
-    if (intent === 'search_food' && filters?.veg === true)
-        return `Here are the best veg options available right now 🥦 — ${resultCount} choices!`;
-    if (intent === 'search_food' && filters?.veg === false)
-        return `Craving non-veg? Here are ${resultCount} delicious options 🍗!`;
-    if (intent === 'search_food' && filters?.food_name)
-        return `Found ${resultCount} matches for "${filters.food_name}" 😋 — enjoy!`;
+    if (intent === 'search_food') {
+        const name = filters?.food_name ? `**${filters.food_name}**` : null;
+        const vegLabel = filters?.veg === true ? 'veg' : filters?.veg === false ? 'non-veg' : null;
+        const priceLabel = filters?.price_max ? ` under ₹${filters.price_max}` : '';
+        if (name && vegLabel) return `Found ${resultCount} ${vegLabel} ${name} options${priceLabel} 🍽️ — enjoy!`;
+        if (name) return `Found ${resultCount} ${name} options${priceLabel} 😋 — enjoy!`;
+        if (vegLabel === 'veg') return `Here are ${resultCount} great veg options${priceLabel} 🥦!`;
+        if (vegLabel === 'non-veg') return `Craving non-veg? Here are ${resultCount} delicious options${priceLabel} 🍗!`;
+    }
     return `Here are ${resultCount} great options for you! 🎉`;
 }
 
@@ -258,10 +277,10 @@ async function advancedSearchFood(filters) {
     query = query.eq('available', true);
 
     // Try to sort by rating first; fall back to created_at if rating column missing
-    let { data, error } = await query.order('rating', { ascending: false }).limit(Math.min(filters.limit || 10, 20));
+    let { data, error } = await query.order('rating', { ascending: false }).limit(Math.min(filters.limit || 6, 20));
     if (error && error.message?.includes('rating')) {
         // rating column not yet added; fall back
-        ({ data, error } = await query.order('created_at', { ascending: false }).limit(Math.min(filters.limit || 10, 20)));
+        ({ data, error } = await query.order('created_at', { ascending: false }).limit(Math.min(filters.limit || 6, 20)));
     }
     if (error) throw error;
 
