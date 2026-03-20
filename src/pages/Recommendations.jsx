@@ -64,21 +64,12 @@ const StarField = () => (
 
 const UFOAssistant = ({ userId }) => {
   const canvasRef = useRef(null);
-  const [data, setData] = useState(null);
   const [ufoPos, setUfoPos] = useState({ x: -100, y: 100, opacity: 0 });
   const ufoState = useRef({
     x: -100, y: 100, vx: 0, vy: 0, rotation: 0,
     targetX: 200, targetY: 200, trail: [],
     hidingUntil: 0, opacity: 0
   });
-
-  const fetchMsg = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/recommendations/ufo-message/${userId}`);
-      const json = await res.json();
-      if (json.success) setData(json);
-    } catch (e) { console.warn('UFO msg fail'); }
-  }, [userId]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -98,8 +89,6 @@ const UFOAssistant = ({ userId }) => {
         u.opacity = Math.min(1, u.opacity + 0.05);
       }
 
-      // Physics (Login-style)
-      // ... (existing physics)
       const dx = u.targetX - u.x;
       const dy = u.targetY - u.y;
       const dist = Math.hypot(dx, dy);
@@ -118,11 +107,6 @@ const UFOAssistant = ({ userId }) => {
       u.x += u.vx; u.y += u.vy;
       u.rotation = u.vx * 0.1;
       
-      // Intelligent Overlap Detection
-      // Check if UFO is over a food card to hide bubble
-      const elementsAtPoint = document.elementsFromPoint(u.x, u.y);
-      const isOverCard = elementsAtPoint.some(el => el.closest('.premium-card-mockup'));
-      
       // Trail
       if (u.opacity > 0.1 && Math.hypot(u.vx, u.vy) > 0.2) {
         u.trail.push({ x: u.x, y: u.y, opacity: u.opacity * 0.6, size: 2 });
@@ -139,25 +123,24 @@ const UFOAssistant = ({ userId }) => {
         ctx.globalAlpha = u.opacity;
         ctx.translate(u.x, u.y);
         ctx.rotate(u.rotation);
-        ctx.shadowColor = 'rgba(0, 255, 150, 0.8)'; ctx.shadowBlur = 15;
-        ctx.font = '32px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(0, 255, 150, 0.8)'; ctx.shadowBlur = 20;
+        ctx.font = '40px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText('🛸', 0, 0);
         ctx.restore();
       }
 
-      // Sync state for React bubble (hide if over card)
-      setUfoPos({ x: u.x, y: u.y, opacity: isOverCard ? 0 : u.opacity });
-
+      setUfoPos({ x: u.x, y: u.y, opacity: u.opacity });
       frame = requestAnimationFrame(loop);
     };
 
     const handleCanvasClick = (e) => {
       const u = ufoState.current;
       const dist = Math.hypot(e.clientX - u.x, e.clientY - u.y);
-      if (dist < 40) {
-        u.hidingUntil = performance.now() + 2000;
-        // Boost velocity away
-        u.vx *= 5; u.vy *= 5;
+      if (dist < 50 && u.opacity > 0) {
+        // Hide permanently when clicked
+        u.hidingUntil = Infinity; 
+        u.vx *= 10; u.vy *= 10;
+        window.dispatchEvent(new CustomEvent('open-chat'));
       }
     };
 
@@ -175,34 +158,11 @@ const UFOAssistant = ({ userId }) => {
       window.removeEventListener('resize', resize);
       window.removeEventListener('mousedown', handleCanvasClick);
     };
-  }, []); // Remove [active] as it's always active now
-
-  useEffect(() => {
-    fetchMsg();
-    const interval = setInterval(fetchMsg, 60000); // New msg every minute
-    return () => clearInterval(interval);
-  }, [fetchMsg]);
+  }, []);
 
   return (
-    <div className="fixed inset-0 z-[100] pointer-events-none overflow-hidden">
-      <canvas ref={canvasRef} className="absolute inset-0" />
-      {ufoPos.opacity > 0.5 && data && (
-        <div 
-          className="absolute ufo-message-bubble"
-          style={{ 
-            left: ufoPos.x + 30, 
-            top: ufoPos.y - 70,
-            opacity: ufoPos.opacity,
-            transition: 'opacity 0.3s ease, left 0.05s linear, top 0.05s linear'
-          }}
-        >
-          <div className="premium-glass bg-black/80 px-4 py-2.5 rounded-2xl rounded-bl-sm border border-cyan-500/30 shadow-[0_0_20px_rgba(0,255,255,0.1)] max-w-[180px]">
-            <p className="text-[11px] font-bold text-cyan-50 leading-tight">
-              {data.message}
-            </p>
-          </div>
-        </div>
-      )}
+    <div className={`fixed inset-0 z-[100] ${ufoPos.opacity > 0 ? '' : 'pointer-events-none'} overflow-hidden`}>
+      <canvas ref={canvasRef} className="absolute inset-0" style={{ pointerEvents: ufoPos.opacity > 0 ? 'auto' : 'none' }} />
     </div>
   );
 };
