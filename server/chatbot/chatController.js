@@ -65,6 +65,31 @@ function detectIntentLocally(message) {
     const m = message.toLowerCase();
     const isCombo = /(?:suggest|best|top|popular|recommend|tasty|and|with)/i.test(m);
 
+    // RESTAURANTS
+    if (/\b(?:restuarant|restaurant|place|hotel|cafe|eatery)s?\b/i.test(m)) {
+        return { 
+            intent: 'search_restaurant', 
+            foods_requested: [], 
+            filters: { limit: extractLimitString(message) || 5 }, 
+            search_strategy: { primary_source: "database" } 
+        };
+    }
+
+    // ORDERS
+    if (/(?:my order|past order|order history|previous order|reorder|what did i order|show order)/i.test(m)) {
+        return { intent: 'get_orders', foods_requested: [], filters: {}, search_strategy: { primary_source: "database" } };
+    }
+
+    // OPEN NOW
+    if (/(?:open now|open today|open at night|what.?s open)/i.test(m)) {
+        return { intent: 'open_now', foods_requested: [], filters: {}, search_strategy: { primary_source: "database" } };
+    }
+
+    // OFFERS
+    if (/\b(?:offer|deal|discount|coupon|promo|sale)\b/i.test(m)) {
+        return { intent: 'get_offers', foods_requested: [], filters: {}, search_strategy: { primary_source: "database" } };
+    }
+
     const terms = Object.keys(FOOD_TERMS).sort((a, b) => b.length - a.length);
     for (const kw of terms) {
         if (m.includes(kw) && !isCombo) {
@@ -83,15 +108,6 @@ function detectIntentLocally(message) {
             };
         }
     }
-
-    if (/my order|past order|order history|previous order|reorder|what did i order|show order/i.test(m))
-        return { intent: 'get_orders', foods_requested: [], filters: {}, search_strategy: { primary_source: "database" } };
-    if (/open now|open today|open at night|what.?s open|open restaurant/i.test(m))
-        return { intent: 'open_now', foods_requested: [], filters: {}, search_strategy: { primary_source: "database" } };
-    if (/\boffer|deal|discount|coupon|promo|sale\b/i.test(m))
-        return { intent: 'get_offers', foods_requested: [], filters: {}, search_strategy: { primary_source: "database" } };
-    if (/\b(show|find) (restaurant|places)\b/i.test(m))
-        return { intent: 'search_restaurant', foods_requested: [], filters: {}, search_strategy: { primary_source: "database" } };
 
     return null; 
 }
@@ -164,15 +180,16 @@ exports.processChatRequest = async (req, res) => {
 
 Your responsibilities:
 STEP 1 Understand the query deeply. Extract ALL food items requested.
-STEP 2 Auto-correct typos AGGRESSIVELY (e.g. "biraynis" -> "biryani", "ice craems" -> "ice cream", "birynains" -> "biryani"). If it sounds like a food, correct it to the nearest real food name.
+STEP 2 Auto-correct typos AGGRESSIVELY (e.g. "biraynis" -> "biryani", "ice craems" -> "ice cream", "birynains" -> "biryani", "restuarants" -> "restaurant"). If it sounds like a food, correct it to the nearest real food name.
 STEP 3 Extract limit and price exactly as mentioned by user.
 STEP 4 Return EXACT JSON structure.
 
 DECISION RULES:
+- If user asks for RESTAURANTS, PLACES, HOTELS, or CAFES (e.g., "top 3 restuarants", "best places to eat"): intent MUST be "search_restaurant". foods_requested must be [].
 - If user lists multiple foods ("ice creams and biryani"): foods_requested must be ["ice cream", "biryani"].
 - If user asks specifically ("give top 5 birynains"): foods_requested MUST have ["biryani"].
 - If user asks general "find me biryani": primary_source is "database", secondary is "recommendation".
-- If user asks generic "give me top food items" with NO specific food name: foods_requested is [].
+- If user asks generic "give me top food items", "what is good", "im hungry" with NO specific food name: foods_requested is []. intent MUST be "recommendation".
 - WARNING: NEVER leave foods_requested empty if the user mentioned ANY specific noun resembling food. You MUST correct it and include it.
 
 OUTPUT STRUCTURE:
