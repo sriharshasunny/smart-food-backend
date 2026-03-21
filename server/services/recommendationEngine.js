@@ -59,7 +59,7 @@ async function getRecommendations(userId, options = {}) {
 
   if (strategy === 'personalized') {
     // ── Personalised path ──────────────────────────────────────────
-    const candidateFoods = await getFoodsInCity(city, { limit: 300 });
+    const candidateFoods = await getFoodsInCity(city, { limit: 1000 }); // Increased candidate pool
 
     if (candidateFoods.length === 0) {
       // No local foods — fallback to cold start
@@ -78,7 +78,7 @@ async function getRecommendations(userId, options = {}) {
       const ranked = rankFoods(filtered, prefs, {
         userCoords,
         mealType,
-        limit: limit * 3, // rank generously, paginate after
+        limit: 1000, // Rank everything in the candidate pool
       });
 
       const offset = (page - 1) * limit;

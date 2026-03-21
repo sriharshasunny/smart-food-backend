@@ -140,7 +140,17 @@ const UFOAssistant = ({ userId }) => {
         // Hide permanently when clicked
         u.hidingUntil = Infinity; 
         u.vx *= 10; u.vy *= 10;
-        // window.dispatchEvent(new CustomEvent('open-chat')); // Disabled per user request
+        document.body.style.cursor = ''; // Reset cursor
+      }
+    };
+
+    const handleMouseMove = (e) => {
+      const u = ufoState.current;
+      const dist = Math.hypot(e.clientX - u.x, e.clientY - u.y);
+      if (dist < 50 && u.opacity > 0.5) {
+        document.body.style.cursor = 'pointer';
+      } else {
+        document.body.style.cursor = '';
       }
     };
 
@@ -151,18 +161,21 @@ const UFOAssistant = ({ userId }) => {
 
     window.addEventListener('resize', resize);
     window.addEventListener('mousedown', handleCanvasClick);
+    window.addEventListener('mousemove', handleMouseMove);
     resize();
     frame = requestAnimationFrame(loop);
     return () => { 
       cancelAnimationFrame(frame); 
       window.removeEventListener('resize', resize);
       window.removeEventListener('mousedown', handleCanvasClick);
+      window.removeEventListener('mousemove', handleMouseMove);
+      document.body.style.cursor = '';
     };
   }, []);
 
   return (
-    <div className={`fixed inset-0 z-[100] ${ufoPos.opacity > 0 ? '' : 'pointer-events-none'} overflow-hidden`}>
-      <canvas ref={canvasRef} className="absolute inset-0" style={{ pointerEvents: ufoPos.opacity > 0 ? 'auto' : 'none' }} />
+    <div className="fixed inset-0 z-[100] pointer-events-none overflow-hidden">
+      <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
     </div>
   );
 };

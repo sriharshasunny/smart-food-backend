@@ -70,6 +70,7 @@ async function computeUserPreferences(userId) {
   const categoryScores = {};
   const mealTypeScores = {};
   const restaurantScores = {};
+  const foodScores = {}; // NEW: track specific food item affinity
   const prices = [];
   let vegCount = 0;
   let nonVegCount = 0;
@@ -121,6 +122,11 @@ async function computeUserPreferences(userId) {
     if (activity.restaurant_id && (activity.action_type === 'order' || activity.action_type === 'cart')) {
       restaurantScores[activity.restaurant_id] = (restaurantScores[activity.restaurant_id] || 0) + weight;
     }
+
+    // Food item scoring (all interactions)
+    if (activity.food_id) {
+      foodScores[activity.food_id] = (foodScores[activity.food_id] || 0) + weight;
+    }
   }
 
   // Derive aggregates
@@ -149,6 +155,7 @@ async function computeUserPreferences(userId) {
     user_id: userId,
     cuisine_scores: cuisineScores,
     category_scores: categoryScores,
+    food_scores: foodScores, // NEW
     meal_type_scores: mealTypeScores,
     avg_order_price: avgPrice,
     price_min: priceMin,

@@ -139,7 +139,7 @@ async function getColdStartFoods(city = null, limit = 20, page = 1) {
     .eq('restaurant_id.is_active', true)
     .gte('rating', 4.0)
     .order('rating', { ascending: false })
-    .limit(limit * 2);
+    .limit(500); // Increased from limit * 2 to allow for more pagination depth
 
   if (city) {
     query = query.ilike('restaurant_id.city', `%${city.toLowerCase()}%`);

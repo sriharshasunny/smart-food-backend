@@ -136,6 +136,19 @@ function priceMatchScore(food, prefs) {
 }
 
 /**
+ * behaviorBonusScore — bonus for previously interacted items.
+ * @param {Object} food
+ * @param {Object} prefs — now includes food_scores map
+ */
+function behaviorBonusScore(food, prefs) {
+  if (!prefs || !prefs.food_scores) return 0;
+  const foodId = food.id || food._id;
+  const affinity = prefs.food_scores[foodId] || 0;
+  // Cap at 0.1 bonus (10 behavior points)
+  return Math.min(affinity * 0.01, 0.1);
+}
+
+/**
  * vegMatchBonus — add a bonus if veg preference matches food type.
  * @returns {number} 0 | 0.05
  */
@@ -191,9 +204,10 @@ function rankFoods(foods, prefs, options = {}) {
     const s4 = popularityScore(food, maxPop);
     const s5 = distanceScore(restaurant, userCoords);
     const s6 = priceMatchScore(food, prefs);
+    const s7 = behaviorBonusScore(food, prefs);
     const bonus = vegMatchBonus(food, prefs) + mealTypeBonus(food, mealType);
 
-    const total = w1*s1 + w2*s2 + w3*s3 + w4*s4 + w5*s5 + w6*s6 + bonus;
+    const total = w1*s1 + w2*s2 + w3*s3 + w4*s4 + w5*s5 + w6*s6 + s7 + bonus;
 
     return {
       ...food,
@@ -205,6 +219,7 @@ function rankFoods(foods, prefs, options = {}) {
         popularity: parseFloat((w4 * s4).toFixed(3)),
         distance: parseFloat((w5 * s5).toFixed(3)),
         priceMatch: parseFloat((w6 * s6).toFixed(3)),
+        behavior: parseFloat(s7.toFixed(3)),
         bonuses: parseFloat(bonus.toFixed(3)),
       },
     };
