@@ -2,7 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Default Orange Theme */
+  --theme-400: 251 146 60;
+  --theme-500: 249 115 22;
+  --theme-600: 234 88 12;
+  --theme-900: 124 45 18;
+}
 
+/* AI Picks Page - Ocean Theme */
+.theme-ocean {
+  --theme-400: 34 211 238; /* cyan-400 */
+  --theme-500: 6 182 212;  /* cyan-500 */
+  --theme-600: 8 145 178;  /* cyan-600 */
+  --theme-900: 22 78 99;   /* cyan-900 */
+}
 
 body {
   background-color: #f8fafc;

@@ -178,7 +178,7 @@ const Skeleton = () => (
       <div className="h-3 bg-white/10 rounded w-1/2" />
       <div className="flex justify-between items-center mt-4">
         <div className="h-5 bg-white/10 rounded w-16" />
-        <div className="h-8 bg-orange-500/20 rounded-xl w-20" />
+        <div className="h-8 bg-themeAccent-500/20 rounded-xl w-20" />
       </div>
     </div>
   </div>
@@ -213,7 +213,7 @@ const FoodGridCard = ({ food, userId, onAdd }) => {
         {/* Match Percentage - Mockup Style */}
         {score && (
           <div className="absolute top-4 right-4 z-20">
-            <div className="bg-orange-500/10 backdrop-blur-md border border-orange-500/30 text-orange-400 px-3 py-1 rounded-full font-bold text-[9px] shadow-[0_0_15px_rgba(6,182,212,0.1)] tracking-tighter uppercase">
+            <div className="bg-themeAccent-500/10 backdrop-blur-md border border-themeAccent-500/30 text-themeAccent-400 px-3 py-1 rounded-full font-bold text-[9px] shadow-[0_0_15px_rgba(6,182,212,0.1)] tracking-tighter uppercase">
               {score}% Match
             </div>
           </div>
@@ -222,7 +222,7 @@ const FoodGridCard = ({ food, userId, onAdd }) => {
 
       <div className="p-5 flex flex-col flex-grow relative z-10 bg-[#0c0c0e]">
         <div className="flex justify-between items-start mb-2 gap-2">
-          <h3 className="text-gray-100 font-bold text-[16px] tracking-tight group-hover:text-orange-400 transition-colors line-clamp-1">
+          <h3 className="text-gray-100 font-bold text-[16px] tracking-tight group-hover:text-themeAccent-400 transition-colors line-clamp-1">
             {food.name}
           </h3>
           <div className={`w-3 h-3 rounded-full border flex items-center justify-center mt-1 scale-90 ${isVeg ? 'border-green-500/30' : 'border-red-500/30'}`}>
@@ -241,7 +241,7 @@ const FoodGridCard = ({ food, userId, onAdd }) => {
           </div>
           <button
             onClick={() => { trackAddToCart(userId, food); onAdd(food); }}
-            className="px-5 py-2 bg-white/[0.03] hover:bg-orange-500 text-gray-400 hover:text-white font-black rounded-xl text-[10px] uppercase tracking-widest transition-all duration-300 border border-white/5 active:scale-95 shadow-lg"
+            className="px-5 py-2 bg-white/[0.03] hover:bg-themeAccent-500 text-gray-400 hover:text-white font-black rounded-xl text-[10px] uppercase tracking-widest transition-all duration-300 border border-white/5 active:scale-95 shadow-lg"
           >
             Order
           </button>
@@ -258,8 +258,8 @@ const FilterChip = ({ label, active, onClick }) => (
     onClick={onClick}
     className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border
       ${active
-        ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/30'
-        : 'bg-white/5 border-white/10 text-gray-400 hover:border-orange-500/40 hover:text-white'
+        ? 'bg-themeAccent-500 border-themeAccent-500 text-white shadow-lg shadow-themeAccent-500/30'
+        : 'bg-white/5 border-white/10 text-gray-400 hover:border-themeAccent-500/40 hover:text-white'
       }`}
   >
     {label}
@@ -368,7 +368,7 @@ const Recommendations = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#020205] pb-24 relative overflow-hidden">
+    <div className="theme-ocean min-h-screen bg-[#020205] pb-24 relative overflow-hidden">
       <style>{SPACE_CSS}</style>
       
       {/* Visual Backdrop */}
@@ -377,7 +377,7 @@ const Recommendations = () => {
 
       {/* Scanning Light Effect */}
       <div className="fixed inset-0 pointer-events-none z-10 overflow-hidden">
-        <div className="absolute inset-x-0 h-1 bg-orange-500/10 shadow-[0_0_20px_rgba(249,115,22,0.3)] opacity-0 animate-[scan_15s_linear_infinite]" />
+        <div className="absolute inset-x-0 h-1 bg-themeAccent-500/10 shadow-[0_0_20px_rgba(249,115,22,0.3)] opacity-0 animate-[scan_15s_linear_infinite]" />
       </div>
 
       <div className="relative z-20">
@@ -385,8 +385,8 @@ const Recommendations = () => {
       <div className="px-4 md:px-8 pt-8 pb-3 relative">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="flex items-center gap-2 mb-1.5 text-orange-500 font-black tracking-tighter text-[9px] uppercase opacity-70">
-              <Zap size={12} className="fill-orange-500" /> Engine Active
+            <div className="flex items-center gap-2 mb-1.5 text-themeAccent-500 font-black tracking-tighter text-[9px] uppercase opacity-70">
+              <Zap size={12} className="fill-themeAccent-500" /> Engine Active
             </div>
             <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter">
               {strategyLabel.split(' ').slice(1).join(' ')}
@@ -408,7 +408,7 @@ const Recommendations = () => {
               <select 
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-white/5 border border-white/10 text-gray-300 text-[11px] font-bold rounded-lg px-2 py-1 outline-none focus:border-orange-500 transition-colors"
+                className="bg-white/5 border border-white/10 text-gray-300 text-[11px] font-bold rounded-lg px-2 py-1 outline-none focus:border-themeAccent-500 transition-colors"
               >
                 <option value="match" className="bg-[#050510]">Best Match</option>
                 <option value="rating" className="bg-[#050510]">Rating</option>
@@ -422,7 +422,7 @@ const Recommendations = () => {
                 <button
                   key={type}
                   onClick={() => setMealFilter(p => p === type ? 'all' : type)}
-                  className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase transition-all border ${mealFilter === type ? 'bg-orange-500 border-orange-500 text-white shadow-[0_0_10px_rgba(6,182,212,0.4)]' : 'bg-white/5 border-white/5 text-gray-400'}`}
+                  className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase transition-all border ${mealFilter === type ? 'bg-themeAccent-500 border-themeAccent-500 text-white shadow-[0_0_10px_rgba(6,182,212,0.4)]' : 'bg-white/5 border-white/5 text-gray-400'}`}
                 >
                   {type}
                 </button>
@@ -434,8 +434,8 @@ const Recommendations = () => {
         {/* AI Explainer - Thinned */}
         {explanation && (
           <div className="mt-6 relative group max-w-3xl">
-            <div className="relative premium-glass border-orange-500/10 p-4 rounded-xl flex items-center gap-3 overflow-hidden">
-              <div className="bg-orange-500/10 p-2 rounded-lg text-orange-400 shrink-0">
+            <div className="relative premium-glass border-themeAccent-500/10 p-4 rounded-xl flex items-center gap-3 overflow-hidden">
+              <div className="bg-themeAccent-500/10 p-2 rounded-lg text-themeAccent-400 shrink-0">
                 <Info size={18} />
               </div>
               <p className="text-gray-300 text-xs md:text-sm italic leading-relaxed font-medium">
@@ -485,7 +485,7 @@ const Recommendations = () => {
             <p className="text-gray-400 text-base">No foods match your current filters.</p>
             <button
               onClick={() => { setVegFilter('all'); setMealFilter('all'); }}
-              className="mt-4 text-orange-400 text-sm underline hover:text-orange-300"
+              className="mt-4 text-themeAccent-400 text-sm underline hover:text-orange-300"
             >
               Clear filters
             </button>
@@ -497,8 +497,8 @@ const Recommendations = () => {
           <div className="text-center mt-8">
             <button
               onClick={handleLoadMore}
-              className="bg-orange-500/10 hover:bg-white text-orange-400 hover:text-black
-                         border border-orange-500/50 hover:border-white
+              className="bg-themeAccent-500/10 hover:bg-white text-themeAccent-400 hover:text-black
+                         border border-themeAccent-500/50 hover:border-white
                          px-8 py-3 rounded-xl font-bold transition-all duration-300 uppercase tracking-widest text-[11px]"
             >
               Load More Recommendations
@@ -509,7 +509,7 @@ const Recommendations = () => {
         {/* Loading more spinner */}
         {loading && foods.length > 0 && (
           <div className="flex justify-center mt-8">
-            <div className="w-8 h-8 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-themeAccent-500/30 border-t-themeAccent-500 rounded-full animate-spin" />
           </div>
         )}
       </div>

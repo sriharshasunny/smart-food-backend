@@ -7,6 +7,12 @@ export default {
     theme: {
         extend: {
             colors: {
+                themeAccent: {
+                    400: 'rgb(var(--theme-400) / <alpha-value>)',
+                    500: 'rgb(var(--theme-500) / <alpha-value>)',
+                    600: 'rgb(var(--theme-600) / <alpha-value>)',
+                    900: 'rgb(var(--theme-900) / <alpha-value>)',
+                },
                 primary: {
                     50: '#fff7ed',
                     100: '#ffedd5',
