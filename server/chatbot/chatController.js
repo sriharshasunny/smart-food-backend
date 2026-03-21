@@ -31,34 +31,46 @@ function extractLimitString(text) {
     return m ? parseInt(m[1]) : null;
 }
 
-const FOOD_TERMS = [
-    'ice cream', 'icecream', 'biryani','biriyani','burger','pizza','pasta','noodles','dosa','idli',
-    'sandwich','roll','momos','fried rice','manchurian','paneer','sushi',
-    'tacos','ramen','soup','waffles','salad','wrap','cake','dessert','coffee',
-    'chai','tea','dal','roti','paratha','chicken','mutton','fish','prawn','meat',
-    'kebab','tikka','curry','samosa','chaat','halwa','kheer','lassi','shake',
-    'smoothie','fries','wings','steak','shawarma','toast','omelette',
-    'pancake','muffin','cookie','brownie','pav bhaji','vada','upma','poha'
-];
+const FOOD_TERMS = {
+    'ice cream': 'ice cream', 'icecream': 'ice cream', 
+    'biryani': 'biryani','biriyani': 'biryani', 'birynain': 'biryani', 'birynains': 'biryani',
+    'burger':'burger','pizza':'pizza','pasta':'pasta','noodles':'noodles',
+    'dosa':'dosa','idli':'idli','sandwich':'sandwich','roll':'roll',
+    'momos':'momos','fried rice':'fried rice','manchurian':'manchurian',
+    'paneer':'paneer','sushi':'sushi','tacos':'tacos','ramen':'ramen',
+    'soup':'soup','waffles':'waffles','salad':'salad','wrap':'wrap',
+    'cake':'cake','dessert':'dessert','coffee':'coffee','chai':'chai',
+    'tea':'tea','dal':'dal','roti':'roti','paratha':'paratha',
+    'chicken':'chicken','mutton':'mutton','fish':'fish','prawn':'prawn',
+    'meat':'meat','kebab':'kebab','tikka':'tikka','curry':'curry',
+    'samosa':'samosa','chaat':'chaat','halwa':'halwa','kheer':'kheer',
+    'lassi':'lassi','shake':'shake','smoothie':'smoothie','fries':'fries',
+    'wings':'wings','steak':'steak','shawarma':'shawarma','toast':'toast',
+    'omelette':'omelette','pancake':'pancake','muffin':'muffin',
+    'cookie':'cookie','brownie':'brownie','pav bhaji':'pav bhaji',
+    'vada':'vada','upma':'upma','poha':'poha'
+};
 
 function extractFoodNamesLocally(text) {
     const lower = text.toLowerCase();
-    const found = [];
-    for (const term of [...FOOD_TERMS].sort((a, b) => b.length - a.length)) {
-        if (lower.includes(term) && !found.includes(term)) found.push(term);
+    const found = new Set();
+    const terms = Object.keys(FOOD_TERMS).sort((a, b) => b.length - a.length);
+    for (const term of terms) {
+        if (lower.includes(term)) found.add(FOOD_TERMS[term]);
     }
-    return found;
+    return Array.from(found);
 }
 
 function detectIntentLocally(message) {
     const m = message.toLowerCase();
     const isCombo = /(?:suggest|best|top|popular|recommend|tasty|and|with)/i.test(m);
 
-    for (const kw of FOOD_TERMS) {
+    const terms = Object.keys(FOOD_TERMS).sort((a, b) => b.length - a.length);
+    for (const kw of terms) {
         if (m.includes(kw) && !isCombo) {
             return {
                 intent: 'food_search',
-                foods_requested: [kw],
+                foods_requested: [FOOD_TERMS[kw]],
                 filters: {
                     price: extractPriceMax(message) || null,
                     diet: null,
@@ -152,18 +164,16 @@ exports.processChatRequest = async (req, res) => {
 
 Your responsibilities:
 STEP 1 Understand the query deeply. Extract ALL food items requested.
-STEP 2 Auto-correct typos (e.g. "biraynis" -> "biryani", "ice craems" -> "ice cream").
+STEP 2 Auto-correct typos AGGRESSIVELY (e.g. "biraynis" -> "biryani", "ice craems" -> "ice cream", "birynains" -> "biryani"). If it sounds like a food, correct it to the nearest real food name.
 STEP 3 Extract limit and price exactly as mentioned by user.
 STEP 4 Return EXACT JSON structure.
 
 DECISION RULES:
-If user lists multiple foods ("ice creams and biryani"): foods_requested must be ["ice cream", "biryani"].
-If user asks specifically ("give top 5 ice creams"): foods_requested MUST have "ice cream".
-If user asks "best", "top": primary_source is "recommendation", secondary is "database".
-If user asks general "find me biryani": primary_source is "database", secondary is "recommendation".
-If no food name is mentioned at all: leave foods_requested [].
-
-Never guess foods. Never ignore explicitly requested items.
+- If user lists multiple foods ("ice creams and biryani"): foods_requested must be ["ice cream", "biryani"].
+- If user asks specifically ("give top 5 birynains"): foods_requested MUST have ["biryani"].
+- If user asks general "find me biryani": primary_source is "database", secondary is "recommendation".
+- If user asks generic "give me top food items" with NO specific food name: foods_requested is [].
+- WARNING: NEVER leave foods_requested empty if the user mentioned ANY specific noun resembling food. You MUST correct it and include it.
 
 OUTPUT STRUCTURE:
 {
