@@ -62,7 +62,7 @@ const ChatFoodCard = memo(({ food, onAdd, onViewRestaurant, index = 0 }) => {
         <div
             className={`group relative bg-neutral-900 rounded-2xl overflow-hidden border transition-all duration-300 shadow-xl animate-slide-up ${isSuspended
                 ? 'border-neutral-800 opacity-70 grayscale-[25%]'
-                : 'border-neutral-800 hover:border-cyan-500/50 hover:shadow-cyan-900/20 hover:-translate-y-1'
+                : 'border-neutral-800 hover:border-orange-500/50 hover:shadow-orange-900/20 hover:-translate-y-1'
                 }`}
             style={{
                 animationDelay: `${index * 80}ms`,
@@ -71,7 +71,7 @@ const ChatFoodCard = memo(({ food, onAdd, onViewRestaurant, index = 0 }) => {
         >
             {/* Image */}
             <div className="relative h-32 overflow-hidden bg-gray-100">
-                {!loaded && <div className="absolute inset-0 bg-gradient-to-br from-cyan-50 to-red-50 animate-pulse" />}
+                {!loaded && <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-red-50 animate-pulse" />}
                 <img
                     src={optimizeImage(food.image || food.imageUrl || food.image_url, 300)}
                     alt={food.name}
@@ -97,8 +97,8 @@ const ChatFoodCard = memo(({ food, onAdd, onViewRestaurant, index = 0 }) => {
                 {/* Rating pill */}
                 {food.rating && (
                     <div className="absolute bottom-2 right-2 flex items-center gap-0.5 bg-white/90 backdrop-blur-sm px-1.5 py-0.5 rounded-full shadow-sm">
-                        <Star size={8} className="fill-cyan-400 text-cyan-400" />
-                        <span className="text-cyan-600 text-[10px] font-bold">{Number(food.rating).toFixed(1)}</span>
+                        <Star size={8} className="fill-orange-400 text-orange-400" />
+                        <span className="text-orange-600 text-[10px] font-bold">{Number(food.rating).toFixed(1)}</span>
                     </div>
                 )}
             </div>
@@ -109,7 +109,7 @@ const ChatFoodCard = memo(({ food, onAdd, onViewRestaurant, index = 0 }) => {
                 {food.restaurant?.name && (
                     <button
                         onClick={() => onViewRestaurant?.(food.restaurant?.id || food.restaurant?._id)}
-                        className="text-[10px] text-cyan-500 hover:text-cyan-600 truncate w-full text-left flex items-center gap-0.5 mb-2 transition-colors"
+                        className="text-[10px] text-orange-500 hover:text-orange-600 truncate w-full text-left flex items-center gap-0.5 mb-2 transition-colors"
                     >
                         <MapPin size={8} className="flex-shrink-0" />
                         {food.restaurant.name}
@@ -122,7 +122,7 @@ const ChatFoodCard = memo(({ food, onAdd, onViewRestaurant, index = 0 }) => {
                     ) : (
                         <button
                             onClick={() => onAdd(food)}
-                            className="bg-cyan-500 hover:bg-cyan-600 text-white text-[9px] font-black px-2.5 py-1.5 rounded-lg transition-all active:scale-90 shadow-sm shadow-cyan-200 flex items-center gap-1"
+                            className="bg-orange-500 hover:bg-orange-600 text-white text-[9px] font-black px-2.5 py-1.5 rounded-lg transition-all active:scale-90 shadow-sm shadow-orange-200 flex items-center gap-1"
                         >
                             ADD <ShoppingBag size={8} />
                         </button>
@@ -139,7 +139,7 @@ const ChatFoodCard = memo(({ food, onAdd, onViewRestaurant, index = 0 }) => {
 const ChatRestaurantCard = memo(({ rest, onView }) => {
     const isSuspended = rest._suspended || rest.is_active === false;
     return (
-        <div className={`bg-neutral-900 rounded-2xl border transition-all duration-200 overflow-hidden shadow-md ${isSuspended ? 'border-neutral-800 opacity-75' : 'border-neutral-800 hover:border-cyan-500/40 hover:shadow-lg'
+        <div className={`bg-neutral-900 rounded-2xl border transition-all duration-200 overflow-hidden shadow-md ${isSuspended ? 'border-neutral-800 opacity-75' : 'border-neutral-800 hover:border-orange-500/40 hover:shadow-lg'
             }`}>
             <div className="p-3">
                 <div className="flex justify-between items-start mb-1.5">
@@ -150,9 +150,9 @@ const ChatRestaurantCard = memo(({ rest, onView }) => {
                         )}
                     </div>
                     {rest.rating && (
-                        <div className="flex items-center gap-0.5 bg-cyan-950/30 border border-cyan-500/20 px-1.5 py-0.5 rounded-full flex-shrink-0 ml-2">
-                            <Star size={8} className="fill-cyan-400 text-cyan-400" />
-                            <span className="text-cyan-500 text-[10px] font-bold">{rest.rating}</span>
+                        <div className="flex items-center gap-0.5 bg-orange-950/30 border border-orange-500/20 px-1.5 py-0.5 rounded-full flex-shrink-0 ml-2">
+                            <Star size={8} className="fill-orange-400 text-orange-400" />
+                            <span className="text-orange-500 text-[10px] font-bold">{rest.rating}</span>
                         </div>
                     )}
                 </div>
@@ -171,7 +171,7 @@ const ChatRestaurantCard = memo(({ rest, onView }) => {
                                     {f.name}
                                 </span>
                                 <div className="flex items-center gap-1.5 shrink-0">
-                                    {f.rating && <span className="text-cyan-400 text-[9px] font-semibold">★{Number(f.rating).toFixed(1)}</span>}
+                                    {f.rating && <span className="text-orange-400 text-[9px] font-semibold">★{Number(f.rating).toFixed(1)}</span>}
                                     <span className="text-gray-700 font-semibold">₹{f.price}</span>
                                 </div>
                             </div>
@@ -180,7 +180,7 @@ const ChatRestaurantCard = memo(({ rest, onView }) => {
                 )}
                 <button
                     onClick={() => onView(rest._id || rest.id)}
-                    className="w-full bg-cyan-500 hover:bg-cyan-600 text-white text-[11px] font-bold py-2 rounded-xl transition-all active:scale-98 flex items-center justify-center gap-1 shadow-sm shadow-cyan-200"
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold py-2 rounded-xl transition-all active:scale-98 flex items-center justify-center gap-1 shadow-sm shadow-orange-200"
                 >
                     {isSuspended ? 'View Details' : 'View Full Menu'} <ChevronRight size={12} />
                 </button>
@@ -196,8 +196,8 @@ const Chip = memo(({ label, emoji, onClick, active }) => (
     <button
         onClick={() => onClick(label)}
         className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl border text-[11px] font-bold whitespace-nowrap transition-all duration-200 active:scale-95 ${active
-            ? 'bg-cyan-500 border-cyan-500 text-white shadow-md shadow-cyan-900/20'
-            : 'bg-neutral-800 border-neutral-700 text-gray-400 hover:border-cyan-500/50 hover:bg-neutral-700 hover:text-cyan-400'
+            ? 'bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-900/20'
+            : 'bg-neutral-800 border-neutral-700 text-gray-400 hover:border-orange-500/50 hover:bg-neutral-700 hover:text-orange-400'
             }`}
     >
         <span className="text-base leading-none">{emoji}</span> {label}
@@ -241,7 +241,7 @@ const ChatWidget = () => {
     const [selDate, setSelDate] = useState(null);
     const [activeChip, setActiveChip] = useState(null);
 
-    const CHAT_V = 'v2_black_cyan_pure';
+    const CHAT_V = 'v2_black_orange_pure';
     const storageKey = `smartbot_${user?.id || 'guest'}`;
 
     const [messages, setMessages] = useState(() => {
@@ -359,7 +359,7 @@ const ChatWidget = () => {
                     {foods.length > 0 && (
                         <>
                             <div className="flex items-center gap-2 mb-2">
-                                <span className="text-[10px] font-black text-cyan-500 uppercase tracking-widest">
+                                <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">
                                     {msg.type === 'trending_items' ? '🔥 Trending' : msg.type === 'get_offers' ? '🏷️ Deals' : '🍽️ Search Results'}
                                 </span>
                                 <div className="flex-1 h-px bg-neutral-800" />
@@ -387,7 +387,7 @@ const ChatWidget = () => {
                     {rests.length > 0 && (
                         <>
                             <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-black text-cyan-500 uppercase tracking-widest">🏪 Restaurants</span>
+                                <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">🏪 Restaurants</span>
                                 <div className="flex-1 h-px bg-neutral-800" />
                             </div>
                             {rests.map((r, i) => <ChatRestaurantCard key={r.id || r._id || i} rest={r} onView={handleViewRestaurant} />)}
@@ -409,26 +409,47 @@ const ChatWidget = () => {
                     {orders.length > 0 && (
                         <>
                             <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-black text-cyan-500 uppercase tracking-widest">📦 Recent Orders</span>
+                                <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">📦 Recent Orders</span>
                                 <div className="flex-1 h-px bg-neutral-800" />
                             </div>
                             {orders.map((order, i) => (
-                                <div key={order.id || i} className="bg-neutral-900 border border-neutral-800 rounded-2xl p-3 shadow-md">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="text-[11px] text-gray-500 font-mono">#{(order.id || '').toString().slice(-8)}</span>
-                                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${order.status === 'delivered' ? 'bg-green-900/20 text-green-400 border border-green-800/30' : 'bg-cyan-900/20 text-cyan-400 border border-cyan-800/30'}`}>
-                                            {order.status || 'Pending'}
-                                        </span>
-                                    </div>
-                                    {(order.items || []).slice(0, 3).map((item, j) => (
-                                        <div key={j} className="flex justify-between text-[11px] py-0.5">
-                                            <span className="text-gray-300">{item.quantity}× {item.food?.name || 'Item'}</span>
-                                            <span className="text-gray-500">₹{(item.food?.price || 0) * item.quantity}</span>
+                                <div key={order.id || i} className="group relative bg-[#0c0c0e] border border-white/[0.05] rounded-[1.5rem] p-4 overflow-hidden hover:border-orange-500/30 transition-all duration-300 shadow-2xl">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-[40px] pointer-events-none group-hover:bg-orange-500/10 transition-all" />
+                                    
+                                    <div className="flex justify-between items-center mb-4 pb-3 border-b border-white/[0.04] relative z-10">
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-black text-white/40 uppercase tracking-[0.15em] mb-0.5">Order ID</span>
+                                            <span className="text-[12px] text-white/80 font-mono tracking-wider">#{(order.id || '').toString().slice(-8)}</span>
                                         </div>
-                                    ))}
-                                    <div className="flex justify-between items-center mt-2 pt-2 border-t border-neutral-800">
-                                        <span className="text-[10px] text-gray-500">{order.created_at ? new Date(order.created_at).toLocaleDateString() : ''}</span>
-                                        <span className="text-white font-black text-sm">₹{order.total_amount || 0}</span>
+                                        <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-inner ${order.status === 'delivered' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'}`}>
+                                            {order.status || 'Pending'}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-1.5 relative z-10">
+                                        {(order.items || []).slice(0, 3).map((item, j) => (
+                                            <div key={j} className="flex justify-between items-start text-[12px]">
+                                                <div className="flex items-start gap-2 max-w-[75%]">
+                                                    <span className="text-orange-400 font-bold bg-orange-500/10 px-1.5 py-0.5 rounded-md text-[10px]">{item.quantity}×</span>
+                                                    <span className="text-white/80 font-medium line-clamp-1 translate-y-px">{item.food?.name || 'Item'}</span>
+                                                </div>
+                                                <span className="text-white/50 font-medium">₹{(item.food?.price || 0) * item.quantity}</span>
+                                            </div>
+                                        ))}
+                                        {(order.items || []).length > 3 && (
+                                            <div className="text-[10px] text-white/30 font-medium pl-8 italic">+{order.items.length - 3} more item(s)</div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex justify-between items-end mt-4 pt-4 border-t border-white/[0.04] relative z-10">
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-black text-white/40 uppercase tracking-[0.1em] mb-0.5">Date</span>
+                                            <span className="text-[11px] text-white/60 font-medium">{order.created_at ? new Date(order.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</span>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-[9px] font-black text-white/40 uppercase tracking-[0.1em] mb-0.5">Total</span>
+                                            <span className="text-white font-black text-lg tracking-tight">₹{order.total_amount || 0}</span>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -462,16 +483,16 @@ const ChatWidget = () => {
             {/* ── Floating UFO Trigger ── Black & Cyan */}
             <button
                 onClick={() => { setIsOpen(o => !o); setUnread(0); }}
-                className="fixed bottom-6 right-6 z-[60] w-16 h-16 flex items-center justify-center rounded-full bg-neutral-900 shadow-[0_10px_30px_rgba(249,115,22,0.3)] hover:shadow-[0_15px_40px_rgba(249,115,22,0.5)] active:scale-95 transition-all duration-300 border-2 border-cyan-500/30 group"
+                className="fixed bottom-6 right-6 z-[60] w-16 h-16 flex items-center justify-center rounded-full bg-neutral-900 shadow-[0_10px_30px_rgba(249,115,22,0.3)] hover:shadow-[0_15px_40px_rgba(249,115,22,0.5)] active:scale-95 transition-all duration-300 border-2 border-orange-500/30 group"
                 style={{ animation: 'float-orb 4s ease-in-out infinite' }}
             >
                 {isOpen ? (
-                    <X size={26} className="text-cyan-500" />
+                    <X size={26} className="text-orange-500" />
                 ) : (
                     <div className="relative flex items-center justify-center w-full h-full">
-                        <Bot size={28} className="text-cyan-500 group-hover:rotate-12 transition-transform duration-300" />
+                        <Bot size={28} className="text-orange-500 group-hover:rotate-12 transition-transform duration-300" />
                         {unread > 0 && (
-                            <span className="absolute -top-3 -right-3 min-w-[20px] h-[20px] px-1 rounded-full bg-cyan-600 border-[2px] border-neutral-900 flex items-center justify-center text-[10px] font-black text-white shadow-md">{unread}</span>
+                            <span className="absolute -top-3 -right-3 min-w-[20px] h-[20px] px-1 rounded-full bg-orange-600 border-[2px] border-neutral-900 flex items-center justify-center text-[10px] font-black text-white shadow-md">{unread}</span>
                         )}
                     </div>
                 )}
@@ -493,7 +514,7 @@ const ChatWidget = () => {
                             {/* UFO Bot avatar */}
                             <div className="relative">
                                 <div
-                                    className="w-12 h-12 rounded-full bg-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-900/40 border-2 border-cyan-400/20"
+                                    className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-900/40 border-2 border-orange-400/20"
                                 >
                                     <Bot size={22} className="text-white" />
                                 </div>
@@ -511,7 +532,7 @@ const ChatWidget = () => {
                             <button
                                 onClick={() => setView(v => v === 'history' ? 'chat' : 'history')}
                                 title="History"
-                                className={`p-2 rounded-xl transition-all ${view === 'history' ? 'bg-cyan-50 text-cyan-500' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'}`}
+                                className={`p-2 rounded-xl transition-all ${view === 'history' ? 'bg-orange-50 text-orange-500' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'}`}
                             >
                                 <History size={16} />
                             </button>
@@ -537,7 +558,7 @@ const ChatWidget = () => {
                                             const label = date === today ? 'Today' : date === yesterday ? 'Yesterday' : new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
                                             return (
                                                 <button key={date} onClick={() => setSelDate(date)}
-                                                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all ${selDate === date ? 'bg-cyan-600 text-white shadow-md shadow-cyan-900/20' : 'bg-neutral-800 text-gray-400 hover:bg-neutral-700 hover:text-cyan-400'}`}>
+                                                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all ${selDate === date ? 'bg-orange-600 text-white shadow-md shadow-orange-900/20' : 'bg-neutral-800 text-gray-400 hover:bg-neutral-700 hover:text-orange-400'}`}>
                                                     {label}
                                                 </button>
                                             );
@@ -550,10 +571,10 @@ const ChatWidget = () => {
                                     <div key={i} className={`flex gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                                         {msg.sender !== 'user' && (
                                             <div className="w-6 h-6 rounded-xl bg-neutral-800 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm border border-neutral-700">
-                                                <Bot size={11} className="text-cyan-500" />
+                                                <Bot size={11} className="text-orange-500" />
                                             </div>
                                         )}
-                                        <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-[12px] leading-relaxed ${msg.sender === 'user' ? 'bg-cyan-600 text-white rounded-tr-md' : 'bg-neutral-900 text-gray-100 rounded-tl-md border border-neutral-800'}`}>
+                                        <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-[12px] leading-relaxed ${msg.sender === 'user' ? 'bg-orange-600 text-white rounded-tr-md' : 'bg-neutral-900 text-gray-100 rounded-tl-md border border-neutral-800'}`}>
                                             {msg.content || msg.message}
                                         </div>
                                     </div>
@@ -568,7 +589,7 @@ const ChatWidget = () => {
                                 )}
                             </div>
                             <div className="px-4 py-3 border-t border-neutral-800 bg-neutral-900 shrink-0">
-                                <button onClick={() => setView('chat')} className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-sm rounded-2xl transition-all shadow-sm shadow-cyan-900/20 flex items-center justify-center gap-2">
+                                <button onClick={() => setView('chat')} className="w-full py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold text-sm rounded-2xl transition-all shadow-sm shadow-orange-900/20 flex items-center justify-center gap-2">
                                     <ArrowLeft size={14} /> Back to Chat
                                 </button>
                             </div>
@@ -595,13 +616,13 @@ const ChatWidget = () => {
 
                                                 {!isUser && (
                                                     <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm border border-neutral-700">
-                                                        <Bot size={14} className="text-cyan-500" />
+                                                        <Bot size={14} className="text-orange-500" />
                                                     </div>
                                                 )}
 
                                                 <div className="max-w-[88%] animate-fade-in">
                                                     <div className={`px-4 py-3 rounded-2xl shadow-sm ${isUser
-                                                        ? 'bg-cyan-600 text-white rounded-tr-md shadow-cyan-900/20'
+                                                        ? 'bg-orange-600 text-white rounded-tr-md shadow-orange-900/20'
                                                         : 'bg-neutral-900 text-gray-100 rounded-tl-md border border-neutral-800'
                                                         }`}>
                                                         {renderContent(msg, isLatest)}
@@ -609,7 +630,7 @@ const ChatWidget = () => {
                                                     <div className={`flex items-center gap-1 mt-1 text-[10px] text-gray-400 ${isUser ? 'justify-end' : 'justify-start'}`}>
                                                         <Clock size={8} />
                                                         <span>{ts?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                        {isUser && <CheckCheck size={10} className="text-cyan-400" />}
+                                                        {isUser && <CheckCheck size={10} className="text-orange-400" />}
                                                     </div>
                                                 </div>
                                             </div>
@@ -621,11 +642,11 @@ const ChatWidget = () => {
                                 {loading && (
                                     <div className="flex items-center gap-2.5 animate-fade-in">
                                         <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center flex-shrink-0 shadow-sm border border-neutral-700">
-                                            <Bot size={14} className="text-cyan-500" />
+                                            <Bot size={14} className="text-orange-500" />
                                         </div>
                                         <div className="bg-neutral-900 border border-neutral-800 px-5 py-3.5 rounded-2xl rounded-tl-md flex items-center gap-1.5 shadow-sm">
                                             {[0, 1, 2].map(i => (
-                                                <span key={i} className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
+                                                <span key={i} className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
                                             ))}
                                         </div>
                                     </div>
@@ -650,7 +671,7 @@ const ChatWidget = () => {
                             {/* ── Auto Suggestions ── */}
                             {suggestedQueries.length > 0 && !loading && (
                                 <div className="px-4 pb-3 shrink-0 bg-black animate-fade-in">
-                                    <p className="text-[10px] font-bold text-cyan-500 uppercase tracking-widest mb-2 flex items-center gap-1"><Sparkles size={10} /> Suggested</p>
+                                    <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest mb-2 flex items-center gap-1"><Sparkles size={10} /> Suggested</p>
                                     <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
                                         {suggestedQueries.map((q, i) => (
                                             <Chip key={i} label={q} emoji="✨" active={activeChip === q}
@@ -662,7 +683,7 @@ const ChatWidget = () => {
 
                              {/* ── Input Bar ── Dark & Cyan */}
                             <div className="px-4 pb-4 pt-3 bg-neutral-900 border-t border-neutral-800 shrink-0">
-                                <div className="flex items-center gap-2 bg-neutral-800 border border-neutral-700 shadow-sm rounded-full px-1.5 py-1.5 focus-within:border-cyan-500/50 transition-all">
+                                <div className="flex items-center gap-2 bg-neutral-800 border border-neutral-700 shadow-sm rounded-full px-1.5 py-1.5 focus-within:border-orange-500/50 transition-all">
                                     <input
                                         ref={inputRef}
                                         type="text"
@@ -675,13 +696,13 @@ const ChatWidget = () => {
                                     <button
                                         onClick={() => submitMessage(input)}
                                         disabled={loading || !input.trim()}
-                                        className="w-10 h-10 rounded-full bg-cyan-500 hover:bg-cyan-600 disabled:bg-neutral-700 flex items-center justify-center text-white transition-all active:scale-90 shadow-md shadow-cyan-900/20 disabled:shadow-none flex-shrink-0"
+                                        className="w-10 h-10 rounded-full bg-orange-500 hover:bg-orange-600 disabled:bg-neutral-700 flex items-center justify-center text-white transition-all active:scale-90 shadow-md shadow-orange-900/20 disabled:shadow-none flex-shrink-0"
                                     >
                                         <Send size={16} className="translate-x-0.5 -translate-y-px pl-0.5" />
                                     </button>
                                 </div>
                                 <div className="flex items-center justify-center gap-1 mt-2">
-                                    <Sparkles size={10} className="text-cyan-400 opacity-80" />
+                                    <Sparkles size={10} className="text-orange-400 opacity-80" />
                                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Powered by Gemini AI Engine</p>
                                 </div>
                             </div>

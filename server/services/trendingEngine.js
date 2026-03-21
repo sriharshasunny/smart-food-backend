@@ -73,15 +73,15 @@ async function getTrendingFoods(city = null, limit = 20, page = 1) {
       id, name, price, image, description, category, cuisine,
       is_veg, spice_level, meal_type, rating, popularity_score,
       available, restaurant_id,
-      restaurants!inner ( id, name, city, rating, is_active, price_tier )
+      restaurant_id!inner ( id, name, city, rating, is_active, price_tier )
     `)
     .eq('available', true)
-    .eq('restaurants.is_active', true)
+    .eq('restaurant_id.is_active', true)
     .order('popularity_score', { ascending: false })
     .limit(limit * 3); // over-fetch then filter
 
   if (city) {
-    query = query.ilike('restaurants.city', `%${city.toLowerCase()}%`);
+    query = query.ilike('restaurant_id.city', `%${city.toLowerCase()}%`);
   }
 
   if (trendingIds.length > 0) {
@@ -100,7 +100,7 @@ async function getTrendingFoods(city = null, limit = 20, page = 1) {
     const trendScore = trendRank === -1 ? 0 : 1 - trendRank / trendingIds.length;
     return {
       ...f,
-      restaurant: f.restaurants,
+      restaurant: f.restaurant_id,
       _trendScore: trendScore,
       _score: trendScore * 0.6 + (parseFloat(f.rating) / 5) * 0.4,
     };
@@ -133,16 +133,16 @@ async function getColdStartFoods(city = null, limit = 20, page = 1) {
       id, name, price, image, description, category, cuisine,
       is_veg, spice_level, meal_type, rating, popularity_score,
       available, restaurant_id,
-      restaurants!inner ( id, name, city, rating, is_active, price_tier )
+      restaurant_id!inner ( id, name, city, rating, is_active, price_tier )
     `)
     .eq('available', true)
-    .eq('restaurants.is_active', true)
+    .eq('restaurant_id.is_active', true)
     .gte('rating', 4.0)
     .order('rating', { ascending: false })
     .limit(limit * 2);
 
   if (city) {
-    query = query.ilike('restaurants.city', `%${city.toLowerCase()}%`);
+    query = query.ilike('restaurant_id.city', `%${city.toLowerCase()}%`);
   }
 
   const { data: foods, error } = await query;
@@ -157,7 +157,7 @@ async function getColdStartFoods(city = null, limit = 20, page = 1) {
     const result = (foods || [])
       .map(f => ({
         ...f,
-        restaurant: f.restaurants,
+        restaurant: f.restaurant_id,
         _score: (parseFloat(f.rating) / 5) * 0.6 + (parseFloat(f.popularity_score) / maxPop) * 0.4,
       }))
       .sort((a, b) => b._score - a._score)
