@@ -1,9 +1,42 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { ShoppingBag, Search, Menu, User, Heart } from 'lucide-react';
+import { ShoppingBag, Search, Menu, User, Heart, Zap, ShieldCheck, Activity } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useShop } from '../context/ShopContext';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const NAV_HUD_CSS = `
+  @keyframes energy-shimmer {
+    0% { transform: translateX(-100%) skewX(-45deg); opacity: 0; }
+    20% { opacity: 0.5; }
+    50% { opacity: 0.8; }
+    80% { opacity: 0.5; }
+    100% { transform: translateX(200%) skewX(-45deg); opacity: 0; }
+  }
+  @keyframes logo-pulse {
+    0%, 100% { filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.4)); }
+    50% { filter: drop-shadow(0 0 15px rgba(34, 211, 238, 0.8)); }
+  }
+  .hud-energy-line {
+    position: absolute;
+    bottom: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, #22d3ee, transparent);
+    overflow: hidden;
+  }
+  .hud-energy-line::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+    animation: energy-shimmer 4s ease-in-out infinite;
+  }
+  .nav-perspective {
+    perspective: 1000px;
+  }
+  .nav-tilt {
+    transform: rotateX(2deg);
+    transform-origin: top;
+  }
+  .neon-text-cyan {
+    text-shadow: 0 0 10px rgba(34, 211, 238, 0.5), 0 0 2px rgba(34, 211, 238, 0.8);
+  }
+`;
 
 const Navbar = ({ toggleSidebar }) => {
     const { cartCount, searchQuery, setSearchQuery } = useShop();
@@ -19,11 +52,17 @@ const Navbar = ({ toggleSidebar }) => {
     ];
 
     return (
-        <nav className="sticky top-0 z-50 transition-all duration-300 rounded-b-[1.5rem] shadow-lg">
-            {/* 1. HUD Border Layer */}
-            <div className={`absolute inset-0 rounded-b-2xl ${location.pathname === '/recommendations' ? 'bg-white/10' : 'bg-gradient-to-r from-orange-400 via-pink-500 to-purple-500 animate-gradient-x'} p-[1px]`}>
+        <nav className="sticky top-0 z-50 transition-all duration-500 nav-perspective">
+            <style>{NAV_HUD_CSS}</style>
+            {/* 1. HUD Border Layer - Enhanced Depth */}
+            <div className={`absolute inset-0 rounded-b-2xl nav-tilt ${location.pathname === '/recommendations' ? 'bg-white/[0.08] shadow-[0_10px_30px_rgba(0,0,0,0.5)]' : 'bg-gradient-to-r from-orange-400 via-pink-500 to-purple-500 animate-gradient-x'} p-[1px]`}>
                 {/* 2. Inner Background Layer */}
-                <div className={`h-full w-full ${location.pathname === '/recommendations' ? 'bg-[#0a0a14]/80 backdrop-blur-3xl' : 'bg-white'} rounded-b-[calc(1rem-1px)] shadow-2xl`}></div>
+                <div className={`h-full w-full ${location.pathname === '/recommendations' ? 'bg-[#0a0a14]/90 backdrop-blur-3xl saturate-150' : 'bg-white'} rounded-b-[calc(1rem-1px)]`}></div>
+                
+                {/* 3. Energy Shimmer Line */}
+                {location.pathname === '/recommendations' && (
+                    <div className="hud-energy-line opacity-50" />
+                )}
             </div>
 
             <div className="max-w-[1600px] mx-auto px-6 w-full relative z-10">
@@ -40,12 +79,17 @@ const Navbar = ({ toggleSidebar }) => {
                         </button>
 
                         <Link to="/home" className="flex items-center gap-3 group cursor-pointer select-none">
-                            <div className={`p-2 rounded-sm shadow-lg ${location.pathname === '/recommendations' ? 'bg-themeAccent-500/20 border border-themeAccent-500/30' : 'bg-gradient-to-tr from-orange-500 to-red-500'} group-hover:scale-105 transition-transform duration-300`}>
-                                <ShoppingBag className={`w-4 h-4 ${location.pathname === '/recommendations' ? 'text-themeAccent-400' : 'text-white'}`} />
+                            <div className={`p-2 rounded-sm shadow-xl transition-all duration-500 relative overflow-hidden ${location.pathname === '/recommendations' 
+                                ? 'bg-themeAccent-500/10 border border-themeAccent-500/40 animate-[logo-pulse_3s_infinite]' 
+                                : 'bg-gradient-to-tr from-orange-500 to-red-500'}`}>
+                                <ShoppingBag className={`w-4 h-4 relative z-10 ${location.pathname === '/recommendations' ? 'text-themeAccent-400' : 'text-white'}`} />
+                                {location.pathname === '/recommendations' && (
+                                    <div className="absolute inset-x-0 h-px bg-themeAccent-400/50 bottom-0 animate-pulse" />
+                                )}
                             </div>
                             {/* Desktop Logo */}
-                            <span className={`text-lg md:text-xl font-black uppercase tracking-tighter hidden sm:block ${location.pathname === '/recommendations' ? 'text-white' : 'text-gray-900'}`}>
-                                SmartFood
+                            <span className={`text-lg md:text-xl font-black uppercase tracking-tighter hidden sm:block transition-all duration-500 ${location.pathname === '/recommendations' ? 'text-white neon-text-cyan' : 'text-gray-900 group-hover:text-orange-600'}`}>
+                                Smart<span className={location.pathname === '/recommendations' ? 'text-themeAccent-400' : 'text-orange-500'}>Food</span>
                             </span>
                             {/* Mobile Page Title */}
                             <span className={`text-lg font-black tracking-tight capitalize sm:hidden ${location.pathname === '/recommendations' ? 'text-white' : 'text-gray-800'}`}>
@@ -65,22 +109,35 @@ const Navbar = ({ toggleSidebar }) => {
                                 {location.pathname === item.path && (
                                     <motion.div
                                         layoutId="navbar-hud-underline"
-                                        className={`absolute bottom-0 left-4 right-4 h-[2px] rounded-full ${location.pathname === '/recommendations' ? 'bg-themeAccent-400 shadow-[0_0_10px_rgba(34,211,238,0.5)]' : 'bg-orange-500'}`}
+                                        className={`absolute bottom-0 left-2 right-2 h-[2px] rounded-full overflow-hidden ${location.pathname === '/recommendations' ? 'bg-themeAccent-500/20' : 'bg-orange-500'}`}
                                         initial={false}
                                         transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                    />
+                                    >
+                                        {location.pathname === '/recommendations' && (
+                                            <motion.div 
+                                                className="absolute inset-0 bg-themeAccent-400 shadow-[0_0_15px_#22d3ee]"
+                                                animate={{ x: ["-100%", "100%"] }}
+                                                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                            />
+                                        )}
+                                    </motion.div>
                                 )}
                                 <div className="flex items-center gap-2 z-10 relative">
-                                    <span className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${location.pathname === item.path 
-                                        ? (location.pathname === '/recommendations' ? 'text-white' : 'text-gray-900') 
-                                        : (location.pathname === '/recommendations' ? 'text-white/40 group-hover:text-white' : 'text-gray-400 group-hover:text-gray-800')
+                                    <span className={`text-[10px] font-black uppercase tracking-[0.25em] transition-all duration-500 ${location.pathname === item.path 
+                                        ? (location.pathname === '/recommendations' ? 'text-themeAccent-400 neon-text-cyan' : 'text-gray-900') 
+                                        : (location.pathname === '/recommendations' ? 'text-white/40 group-hover:text-white group-hover:translate-y-[-1px]' : 'text-gray-400 group-hover:text-gray-800')
                                         }`}>
                                         {item.label}
                                     </span>
                                     {item.isBeta && (
-                                        <span className={`px-1.5 py-[1px] text-[8px] font-black rounded-sm border ${location.pathname === '/recommendations' ? 'border-themeAccent-500/40 text-themeAccent-400 bg-themeAccent-500/5' : 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-sm shadow-purple-500/20'}`}>
-                                            BETA
-                                        </span>
+                                        <div className="relative">
+                                            <span className={`px-1.5 py-[1px] text-[8px] font-black rounded-sm border transition-all duration-500 ${location.pathname === '/recommendations' ? 'border-themeAccent-500/40 text-themeAccent-400 bg-themeAccent-500/5 shadow-[0_0_10px_rgba(34,211,238,0.2)]' : 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-sm shadow-purple-500/20'}`}>
+                                                BETA
+                                            </span>
+                                            {location.pathname === '/recommendations' && (
+                                                <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-themeAccent-400 rounded-full animate-ping opacity-75" />
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </Link>

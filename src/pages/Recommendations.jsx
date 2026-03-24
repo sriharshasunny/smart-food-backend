@@ -36,9 +36,20 @@ const SPACE_CSS = `
     background-size: 800px 800px;
   }
   .hud-grid {
-    background-image: linear-gradient(rgba(34, 211, 238, 0.03) 1px, transparent 1px),
-                      linear-gradient(90deg, rgba(34, 211, 238, 0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
+    background-image: linear-gradient(rgba(34, 211, 238, 0.05) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(34, 211, 238, 0.05) 1px, transparent 1px);
+    background-size: 60px 60px;
+    transform: perspective(1000px) rotateX(60deg) translateY(-200px);
+    transform-origin: center bottom;
+    mask-image: linear-gradient(to top, rgba(0,0,0,1), transparent);
+  }
+  @keyframes grid-glitch {
+    0%, 100% { opacity: 0.05; transform: perspective(1000px) rotateX(60deg) translateY(-200px) scale(1); }
+    1% { opacity: 0.2; transform: perspective(1000px) rotateX(61deg) translateY(-198px) scale(1.01); filter: hue-rotate(90deg); }
+    2% { opacity: 0.05; transform: perspective(1000px) rotateX(60deg) translateY(-200px) scale(1); filter: none; }
+  }
+  .hud-grid-animated {
+    animation: grid-glitch 10s infinite;
   }
   .premium-glass-hud {
     background: rgba(10, 10, 18, 0.6);
@@ -64,8 +75,8 @@ const StarField = () => (
     <div className="absolute inset-0 star-layer-3 opacity-40 scale-150 rotate-6" />
 
     {/* HUD Elements */}
-    <div className="absolute inset-0 hud-grid opacity-[0.03]" />
-    <div className="absolute inset-0 scanner-line h-[400px] w-full opacity-20" />
+    <div className="absolute inset-0 hud-grid hud-grid-animated" />
+    <div className="absolute inset-0 scanner-line h-[400px] w-full opacity-10" />
 
     {/* Nebula / Glow Effects */}
     <div className="absolute top-[-20%] left-[-10%] w-[80%] h-[80%] bg-cyan-500/10 blur-[140px] rounded-full animate-[nebula-flow_40s_ease-in-out_infinite]" />

@@ -1,9 +1,49 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Home, Compass, Heart, ShoppingBag, Clock, Settings, Zap, X, LogOut, MapPin, Sparkles, User } from 'lucide-react';
+import { Home, Compass, Heart, ShoppingBag, Clock, Settings, Zap, X, LogOut, MapPin, Sparkles, User, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+
+const SIDEBAR_HUD_CSS = `
+  @keyframes circuit-line {
+    0% { top: -100%; }
+    100% { top: 200%; }
+  }
+  @keyframes bracket-flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .sidebar-floating {
+    margin: 1rem;
+    height: calc(100vh - 2rem);
+    border-radius: 1.5rem;
+    perspective: 1000px;
+    transform-style: preserve-3d;
+  }
+  .hud-corner {
+    position: absolute; width: 10px; height: 10px;
+    border-color: rgba(34, 211, 238, 0.4);
+    pointer-events: none;
+  }
+  .hud-corner-tl { top: 10px; left: 10px; border-top: 1px solid; border-left: 1px solid; }
+  .hud-corner-br { bottom: 10px; right: 10px; border-bottom: 1px solid; border-right: 1px solid; }
+  .circuit-border {
+    position: absolute;
+    right: 0; top: 0; bottom: 0; width: 1px;
+    background: rgba(34, 211, 238, 0.1);
+    overflow: hidden;
+  }
+  .circuit-border::after {
+    content: ''; position: absolute; left: 0; width: 100%; height: 100px;
+    background: linear-gradient(to bottom, transparent, #22d3ee, transparent);
+    animation: circuit-line 3s linear infinite;
+  }
+  .hud-bracket {
+    font-family: monospace;
+    color: #22d3ee;
+    font-size: 1.2rem;
+    animation: bracket-flicker 0.2s infinite;
+  }
+`;
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
     const location = useLocation();
@@ -43,24 +83,34 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 )}
             </AnimatePresence>
 
-            {/* Sidebar Container */}
+            {/* Sidebar Container - Floating Depth */}
             <motion.div
-                className={`fixed top-0 left-0 h-full w-[280px] z-[60] transform transition-transform duration-300 ease-out ${isOpen ? 'translate-x-0' : '-translate-x-full'
-                    } shrink-0`}
+                className={`fixed top-0 left-0 z-[60] transform transition-all duration-500 ease-out ${isOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'
+                    } ${location.pathname === '/recommendations' ? 'sidebar-floating w-[300px]' : 'h-full w-[280px]'}`}
             >
-                <div className={`h-full w-full relative overflow-hidden rounded-tr-2xl shadow-2xl flex flex-col ${location.pathname === '/recommendations' ? 'bg-[#0a0a14]/90 backdrop-blur-3xl border-r border-white/5' : 'bg-white'}`}>
+                <style>{SIDEBAR_HUD_CSS}</style>
+                <div className={`h-full w-full relative overflow-hidden shadow-2xl flex flex-col transition-all duration-500 ${location.pathname === '/recommendations' 
+                    ? 'bg-[#0a0a14]/95 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.9)] scale-[1.01] hover:scale-[1.02] active:scale-[0.99]' 
+                    : 'bg-white rounded-tr-2xl'}`}>
+
+                    {location.pathname === '/recommendations' && (
+                        <>
+                            <div className="circuit-border" />
+                            <div className="hud-corner hud-corner-tl" />
+                            <div className="hud-corner hud-corner-br" />
+                        </>
+                    )}
 
                     {/* Header with HUD Border */}
                     <div className="relative shrink-0">
-                        {/* HUD Border Segment */}
-                        <div className={`absolute bottom-0 left-0 right-0 h-px ${location.pathname === '/recommendations' ? 'bg-white/10' : 'bg-gray-100'}`} />
+                        <div className={`absolute bottom-0 left-4 right-4 h-px ${location.pathname === '/recommendations' ? 'bg-gradient-to-r from-transparent via-white/10 to-transparent' : 'bg-gray-100'}`} />
                         
                         <div className="relative p-6 flex items-center justify-between">
                             <div className="flex items-center gap-3 group">
-                                <div className={`p-2 rounded-sm shadow-lg ${location.pathname === '/recommendations' ? 'bg-themeAccent-500/20 border border-themeAccent-500/30' : 'bg-gradient-to-tr from-orange-500 to-red-500'}`}>
+                                <div className={`p-2 rounded-sm shadow-2xl transition-all duration-500 ${location.pathname === '/recommendations' ? 'bg-themeAccent-500/10 border border-themeAccent-500/40 shadow-[0_0_20px_rgba(34,211,238,0.2)]' : 'bg-gradient-to-tr from-orange-500 to-red-500'}`}>
                                     <Zap className={`w-5 h-5 ${location.pathname === '/recommendations' ? 'text-themeAccent-400' : 'text-white'} fill-current`} />
                                 </div>
-                                <span className={`text-xl font-black uppercase tracking-tighter ${location.pathname === '/recommendations' ? 'text-white' : 'text-gray-900'}`}>
+                                <span className={`text-xl font-black uppercase tracking-tighter ${location.pathname === '/recommendations' ? 'text-white neon-text-cyan' : 'text-gray-900'}`}>
                                     SmartFood
                                 </span>
                             </div>
@@ -85,37 +135,52 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                                     onClick={toggleSidebar}
                                     className="relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group"
                                 >
-                                    {/* HUD Active Indicator */}
+                                    {/* HUD Active Indicator - Advanced */}
                                     {isActive && (
-                                        <motion.div
-                                            layoutId="sidebar-active-hud"
-                                            className={`absolute inset-0 rounded-sm border-l-2 ${location.pathname === '/recommendations' 
-                                                ? 'bg-themeAccent-500/10 border-themeAccent-500 shadow-[inset_10px_0_20px_rgba(34,211,238,0.05)]' 
-                                                : 'bg-orange-500/10 border-orange-500'}`}
-                                            transition={{
-                                                type: "spring",
-                                                stiffness: 400,
-                                                damping: 30
-                                            }}
-                                        />
+                                        <div className="absolute inset-0 z-0">
+                                            {location.pathname === '/recommendations' ? (
+                                                <div className="h-full w-full flex items-center justify-between px-2">
+                                                    <motion.span initial={{ x: -10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="hud-bracket">[</motion.span>
+                                                    <motion.div 
+                                                        layoutId="sidebar-active-hud-bg"
+                                                        className="absolute inset-y-2 inset-x-8 bg-themeAccent-500/5 border-y border-themeAccent-500/20"
+                                                    />
+                                                    <motion.span initial={{ x: 10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="hud-bracket">]</motion.span>
+                                                </div>
+                                            ) : (
+                                                <motion.div
+                                                    layoutId="sidebar-active-hud"
+                                                    className="absolute inset-0 rounded-sm border-l-2 bg-orange-500/10 border-orange-500"
+                                                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                                />
+                                            )}
+                                        </div>
                                     )}
 
                                     {/* Icon and Label */}
-                                    <div className="relative flex items-center gap-4 w-full">
+                                    <div className="relative flex items-center gap-4 w-full z-10 px-4">
                                         <Icon
-                                            className={`w-5 h-5 transition-colors ${isActive
-                                                ? 'text-white'
-                                                : 'text-gray-400 group-hover:text-orange-500'
+                                            className={`w-4.5 h-4.5 transition-all duration-500 ${isActive
+                                                ? (location.pathname === '/recommendations' ? 'text-themeAccent-400 scale-110' : 'text-white')
+                                                : 'text-gray-400 group-hover:text-themeAccent-400'
                                                 }`}
+                                            strokeWidth={isActive ? 2 : 1.5}
                                         />
                                         <span
-                                            className={`font-bold tracking-wide text-sm transition-colors ${isActive
-                                                ? 'text-white'
-                                                : 'text-gray-600 group-hover:text-gray-900'
+                                            className={`font-black uppercase tracking-[0.2em] text-[10px] transition-all duration-500 ${isActive
+                                                ? (location.pathname === '/recommendations' ? 'text-white neon-text-cyan' : 'text-white')
+                                                : (location.pathname === '/recommendations' ? 'text-white/40 group-hover:text-white' : 'text-gray-600 group-hover:text-gray-900')
                                                 }`}
                                         >
                                             {item.label}
                                         </span>
+                                        {isActive && location.pathname === '/recommendations' && (
+                                            <motion.div 
+                                                className="ml-auto w-1 h-1 bg-themeAccent-400 rounded-full"
+                                                animate={{ scale: [1, 2, 1], opacity: [0.5, 1, 0.5] }}
+                                                transition={{ duration: 1, repeat: Infinity }}
+                                            />
+                                        )}
                                     </div>
                                 </Link>
                             );
