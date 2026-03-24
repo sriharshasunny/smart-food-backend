@@ -7,7 +7,7 @@ import RestaurantCard from '../components/RestaurantCard';
 import { useShop } from '../context/ShopContext';
 import { useAuth } from '../context/AuthContext';
 import { mockRestaurants, mockDishes, categories } from '../data/mockData';
-import { Search, MapPin, ChevronRight, Sparkles, Flame, Zap, ChevronDown } from 'lucide-react';
+import { Search, MapPin, ChevronRight, ChevronLeft, Sparkles, Flame, Zap, ChevronDown } from 'lucide-react';
 import ErrorBoundary from '../components/ErrorBoundary';
 import SkeletonCard from '../components/SkeletonCard';
 import { motion, AnimatePresence } from 'framer-motion';
