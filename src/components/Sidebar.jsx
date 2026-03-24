@@ -30,6 +30,27 @@ const SIDEBAR_CSS = `
   }
   .pill-glow       { animation: pill-glow 2.5s ease-in-out infinite; }
   .pill-glow-space { animation: pill-glow-space 2.5s ease-in-out infinite; }
+
+  @keyframes shimmer-slide {
+    0%   { background-position: -200% center; }
+    100% { background-position:  200% center; }
+  }
+  .text-shimmer {
+    background: linear-gradient(90deg, #111 0%, #111 30%, #f97316 45%, #fbbf24 50%, #f97316 55%, #111 70%, #111 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer-slide 3s linear infinite;
+  }
+  .text-shimmer-space {
+    background: linear-gradient(90deg, #fff 0%, #fff 30%, #22d3ee 45%, #a78bfa 50%, #22d3ee 55%, #fff 70%, #fff 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer-slide 3s linear infinite;
+  }
 `;
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -90,39 +111,49 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
                     {/* ── HEADER ── */}
                     <div className="relative shrink-0">
-                        {/* Bottom divider */}
-                        <div className={`absolute bottom-0 left-5 right-5 h-px ${isSpaceTheme ? 'bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent' : 'bg-gradient-to-r from-transparent via-orange-200 to-transparent'}`} />
+                        {/* Gradient hero top */}
+                        <div className={`relative overflow-hidden rounded-tr-[2rem] ${
+                            isSpaceTheme
+                                ? 'bg-gradient-to-br from-[#0a0a1f] via-[#0d0d2a] to-[#060612]'
+                                : 'bg-gradient-to-br from-orange-500 via-orange-600 to-red-500'
+                        }`}>
+                            {/* Mesh shine overlay */}
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15),transparent_60%)] pointer-events-none" />
+                            {/* Wave bottom */}
+                            <svg className="absolute bottom-0 left-0 right-0 w-full" viewBox="0 0 300 24" preserveAspectRatio="none" style={{ height: 24 }}>
+                                <path d="M0,24 C60,8 120,0 180,8 C240,16 270,12 300,4 L300,24Z" fill={isSpaceTheme ? '#05050f' : 'white'} />
+                            </svg>
 
-                        <div className="p-5 pt-6 flex items-center justify-between">
-                            <Link to="/home" onClick={toggleSidebar} className="flex items-center gap-3 group">
-                                <div className={`p-2 rounded-xl shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:rotate-3
-                                    ${isSpaceTheme
-                                        ? 'bg-cyan-500/15 border border-cyan-500/40 shadow-cyan-500/20'
-                                        : 'bg-gradient-to-tr from-orange-500 to-red-500 shadow-orange-500/30'}`}>
-                                    <Zap className={`w-5 h-5 fill-current ${isSpaceTheme ? 'text-cyan-400' : 'text-white'}`} />
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className={`text-lg font-black tracking-tight leading-none ${isSpaceTheme ? 'text-white' : 'bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent'}`}>
-                                        SmartFood
-                                    </span>
-                                    <span className={`text-[9px] font-bold uppercase tracking-[0.2em] mt-0.5 ${isSpaceTheme ? 'text-cyan-400/60' : 'text-orange-400'}`}>
-                                        {isSpaceTheme ? '// ai mode' : 'Delivery Platform'}
-                                    </span>
-                                </div>
-                            </Link>
+                            <div className="p-5 pt-6 pb-8 flex items-center justify-between relative z-10">
+                                <Link to="/home" onClick={toggleSidebar} className="flex items-center gap-3 group">
+                                    <div className="p-2 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 group-hover:bg-white/30">
+                                        <Zap className="w-5 h-5 text-white fill-white" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className={`text-lg font-black tracking-tight leading-none ${
+                                            isSpaceTheme ? 'text-shimmer-space' : 'text-shimmer'
+                                        }`}>
+                                            SmartFood
+                                        </span>
+                                        <span className="text-[9px] font-bold uppercase tracking-[0.2em] mt-0.5 text-white/70">
+                                            {isSpaceTheme ? '// ai mode' : 'Delivery Platform'}
+                                        </span>
+                                    </div>
+                                </Link>
 
-                            <button
-                                onClick={toggleSidebar}
-                                className={`p-2 rounded-full transition-all active:scale-90 ${isSpaceTheme ? 'hover:bg-white/10 text-white/40 hover:text-white' : 'hover:bg-red-50 text-gray-400 hover:text-red-500'}`}
-                            >
-                                <X className="w-5 h-5" strokeWidth={1.5} />
-                            </button>
+                                <button
+                                    onClick={toggleSidebar}
+                                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-all active:scale-90"
+                                >
+                                    <X className="w-5 h-5" strokeWidth={1.5} />
+                                </button>
+                            </div>
                         </div>
 
                         {/* User greeting strip */}
                         {user && (
-                            <div className={`mx-4 mb-4 px-4 py-3 rounded-xl flex items-center gap-3 border transition-colors duration-500
-                                ${isSpaceTheme
+                            <div className={`mx-4 mt-3 mb-2 px-4 py-3 rounded-xl flex items-center gap-3 border transition-colors duration-500
+                                ${ isSpaceTheme
                                     ? 'bg-white/5 border-white/10'
                                     : 'bg-orange-50/80 border-orange-100'}`}
                             >

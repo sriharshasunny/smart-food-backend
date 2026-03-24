@@ -240,7 +240,25 @@ const Auth = () => {
                                 <div className="space-y-1.5"><label className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Fleet Identity</label><div className="relative group"><Mail className="absolute left-4 top-3.5 w-4 h-4 text-gray-500 group-focus-within:text-indigo-400 transition-colors" /><input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm placeholder-gray-600 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white/[0.08] focus:outline-none transition-all duration-300 shadow-inner" placeholder="pilot@foodverse.com" required /></div></div>
                                 <div className="space-y-1.5"><label className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Access Key</label><div className="relative group"><Lock className="absolute left-4 top-3.5 w-4 h-4 text-gray-500 group-focus-within:text-indigo-400 transition-colors" /><input type="password" name="password" value={formData.password} onChange={handleChange} className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm placeholder-gray-600 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white/[0.08] focus:outline-none transition-all duration-300 shadow-inner" placeholder="••••••••" required /></div></div>
                                 <div className="flex justify-end pt-1"><button type="button" onClick={() => switchMode('forgot')} className="text-[11px] text-indigo-400 hover:text-indigo-300 hover:underline underline-offset-4 tracking-wide font-bold transition-all">Lost Connection?</button></div>
-                                <button type="submit" disabled={loading} className="w-full py-3.5 bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white rounded-xl font-bold tracking-wide active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(99,102,241,0.4)] hover:shadow-[0_6px_25px_rgba(99,102,241,0.5)] mt-4 text-sm group border border-indigo-400/30">{loading ? 'Establishing Link...' : <>Engage Drive <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>}</button>
+                                <button type="submit" disabled={loading}
+                                    className="relative w-full py-4 rounded-xl font-black text-sm tracking-wide overflow-hidden group mt-4
+                                               bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600
+                                               hover:from-indigo-400 hover:via-purple-400 hover:to-indigo-500
+                                               shadow-[0_4px_24px_rgba(99,102,241,0.5)] hover:shadow-[0_8px_32px_rgba(99,102,241,0.7)]
+                                               text-white border border-indigo-400/30 active:scale-[0.98] transition-all duration-300
+                                               disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    {/* Shimmer sweep */}
+                                    <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700
+                                                   bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 pointer-events-none" />
+                                    <span className="relative flex items-center justify-center gap-2">
+                                        {loading ? (
+                                            <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Signing In...</>
+                                        ) : (
+                                            <>Sign In <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
+                                        )}
+                                    </span>
+                                </button>
                             </motion.form>
                         )}
                         {mode === 'register' && (
@@ -250,12 +268,46 @@ const Auth = () => {
                                         <div className="space-y-1.5"><label className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Pilot Designation</label><div className="relative group"><User className="absolute left-4 top-3.5 w-4 h-4 text-gray-500 group-focus-within:text-indigo-400 transition-colors" /><input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm placeholder-gray-600 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white/[0.08] focus:outline-none transition-all duration-300 shadow-inner" placeholder="Cmdr. Shepard" required /></div></div>
                                         <div className="space-y-1.5"><label className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Fleet Identity</label><div className="relative group"><Mail className="absolute left-4 top-3.5 w-4 h-4 text-gray-500 group-focus-within:text-indigo-400 transition-colors" /><input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm placeholder-gray-600 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white/[0.08] focus:outline-none transition-all duration-300 shadow-inner" placeholder="pilot@foodverse.com" required /></div></div>
                                         <div className="space-y-1.5"><label className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Access Key</label><div className="relative group"><Lock className="absolute left-4 top-3.5 w-4 h-4 text-gray-500 group-focus-within:text-indigo-400 transition-colors" /><input type="password" name="password" value={formData.password} onChange={handleChange} className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm placeholder-gray-600 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white/[0.08] focus:outline-none transition-all duration-300 shadow-inner" placeholder="••••••••" required /></div></div>
-                                        <button type="submit" disabled={loading} className="w-full py-3.5 bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white rounded-xl font-bold tracking-wide active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(99,102,241,0.4)] hover:shadow-[0_6px_25px_rgba(99,102,241,0.5)] mt-4 text-sm group border border-indigo-400/30">{loading ? 'Preparing Pod...' : <>Send Verification Code <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>}</button>
+                                        <button type="submit" disabled={loading}
+                                            className="relative w-full py-4 rounded-xl font-black text-sm tracking-wide overflow-hidden group mt-4
+                                                       bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600
+                                                       hover:from-indigo-400 hover:via-purple-400 hover:to-indigo-500
+                                                       shadow-[0_4px_24px_rgba(99,102,241,0.5)] hover:shadow-[0_8px_32px_rgba(99,102,241,0.7)]
+                                                       text-white border border-indigo-400/30 active:scale-[0.98] transition-all duration-300
+                                                       disabled:opacity-60 disabled:cursor-not-allowed"
+                                        >
+                                            <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700
+                                                           bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 pointer-events-none" />
+                                            <span className="relative flex items-center justify-center gap-2">
+                                                {loading ? (
+                                                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Sending Code...</>
+                                                ) : (
+                                                    <>Create Account <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
+                                                )}
+                                            </span>
+                                        </button>
                                     </>
                                 ) : (
                                     <>
                                         <div className="space-y-1.5"><label className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Verification Code</label><input type="text" name="otp" value={formData.otp} onChange={handleChange} className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-3 px-4 text-white text-sm placeholder-gray-600 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white/[0.08] focus:outline-none transition-all duration-300 shadow-inner text-center tracking-widest font-mono" placeholder="----" required /></div>
-                                        <button type="submit" disabled={loading} className="w-full py-3.5 bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white rounded-xl font-bold tracking-wide active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(99,102,241,0.4)] hover:shadow-[0_6px_25px_rgba(99,102,241,0.5)] mt-4 text-sm group border border-indigo-400/30">{loading ? 'Verifying...' : <>Join System <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>}</button>
+                                        <button type="submit" disabled={loading}
+                                            className="relative w-full py-4 rounded-xl font-black text-sm tracking-wide overflow-hidden group mt-4
+                                                       bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600
+                                                       hover:from-indigo-400 hover:via-purple-400 hover:to-indigo-500
+                                                       shadow-[0_4px_24px_rgba(99,102,241,0.5)] hover:shadow-[0_8px_32px_rgba(99,102,241,0.7)]
+                                                       text-white border border-indigo-400/30 active:scale-[0.98] transition-all duration-300
+                                                       disabled:opacity-60"
+                                        >
+                                            <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700
+                                                           bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 pointer-events-none" />
+                                            <span className="relative flex items-center justify-center gap-2">
+                                                {loading ? (
+                                                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Verifying...</>
+                                                ) : (
+                                                    <>Verify & Join <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
+                                                )}
+                                            </span>
+                                        </button>
                                         <button type="button" onClick={() => setStep(1)} className="w-full py-2 mt-2 text-xs text-gray-400 hover:text-white transition-colors">Back</button>
                                     </>
                                 )}
