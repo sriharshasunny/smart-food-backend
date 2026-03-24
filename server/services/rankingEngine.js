@@ -212,7 +212,7 @@ function rankFoods(foods, prefs, options = {}) {
     // bonuses (s7, bonus) can push it higher, so we cap at 98 for "room to grow"
     const rawMatch = (w1*s1 + w2*s2 + w3*s3 + w4*s4 + w5*s5 + w6*s6);
     const boost = s7 + bonus;
-    let percent = Math.min(99, Math.max(30, Math.round(rawMatch + boost)));
+    let percent = Math.min(99, Math.max(30, Math.round((rawMatch + boost) * 100)));
 
     return {
       ...food,

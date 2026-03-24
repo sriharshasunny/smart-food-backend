@@ -206,7 +206,7 @@ const Skeleton = () => (
 const FoodGridCard = ({ food, userId, onAdd }) => {
   const isVeg = food.is_veg === true || food.is_veg === 'true' || food.isVeg;
   const rating = parseFloat(food.rating) || 4.2;
-  const score = food._score ? (food._score * 100).toFixed(0) : null;
+  const score = (food._score !== undefined && food._score !== null) ? Math.round(food._score) : null;
 
   return (
     <div
@@ -531,7 +531,7 @@ const Recommendations = () => {
         )}
 
         {/* Load More */}
-        {!loading && hasMore && filtered.length >= 20 && (
+        {!loading && hasMore && (
           <div className="text-center mt-8">
             <button
               onClick={handleLoadMore}
