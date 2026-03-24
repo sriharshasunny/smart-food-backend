@@ -21,12 +21,15 @@ const RestaurantList = () => {
                     fetch(`${API_URL}/api/food/all`)
                 ]);
                 
-                if (!restsRes.ok) throw new Error('Failed to fetch restaurants');
+                if (!restsRes.ok || !foodsRes.ok) {
+                    throw new Error('Failed to sync data from server');
+                }
+                
                 const restsData = await restsRes.json();
                 const foodsData = await foodsRes.json();
                 
-                setRestaurants(restsData);
-                setDishes(foodsData);
+                setRestaurants(Array.isArray(restsData) ? restsData : []);
+                setDishes(Array.isArray(foodsData) ? foodsData : []);
             } catch (err) {
                 setError(err.message);
             } finally {
