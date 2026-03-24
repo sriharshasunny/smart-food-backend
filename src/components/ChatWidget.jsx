@@ -500,7 +500,7 @@ const ChatWidget = () => {
                                bg-gradient-to-br from-orange-500 via-orange-600 to-red-600
                                shadow-[0_8px_32px_rgba(249,115,22,0.45)] hover:shadow-[0_12px_40px_rgba(249,115,22,0.65)]
                                active:scale-95 transition-all duration-300 group border border-orange-400/30"
-                    style={{ bottom: '30px', right: '20px', animation: 'float-orb 4s ease-in-out infinite' }}
+                    style={{ bottom: '15px', right: '20px', animation: 'float-orb 4s ease-in-out infinite' }}
                 >
                     <span className="absolute inset-0 rounded-2xl border-2 border-orange-400 opacity-40"
                         style={{ animation: 'pulse-glow 2s ease-out infinite' }} />

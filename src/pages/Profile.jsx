@@ -79,7 +79,8 @@ const Profile = () => {
                     email: formData.email, 
                     phone: formData.phone, 
                     address: formData.address,
-                    city: formData.city
+                    city: formData.city,
+                    profile_image: avatarPreview || user?.profile_image
                 })
             });
             const data = await res.json();
@@ -95,6 +96,19 @@ const Profile = () => {
     const handleLogout = async () => {
         try { await logout(); } catch {}
         navigate('/');
+    };
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: { staggerChildren: 0.1, delayChildren: 0.3 }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } }
     };
 
     return (
@@ -121,7 +135,7 @@ const Profile = () => {
                             <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-red-600 rounded-[2.5rem] blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
                             <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-[2.2rem] bg-neutral-900 border-4 border-white overflow-hidden shadow-2xl">
                                 <img
-                                    src={avatarPreview || user?.profileImage || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop"}
+                                    src={avatarPreview || user?.profile_image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop"}
                                     alt="Profile"
                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                                 />
@@ -166,18 +180,24 @@ const Profile = () => {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 grid grid-cols-1 lg:grid-cols-12 gap-12">
+            <motion.div 
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 grid grid-cols-1 lg:grid-cols-12 gap-12"
+            >
                 {/* Left Side: Stats & Navigation */}
-                <div className="lg:col-span-4 space-y-8">
+                <motion.div variants={itemVariants} className="lg:col-span-4 space-y-8">
                     {/* Stats HUD */}
-                    <div className="bg-white rounded-[2.5rem] p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-gray-100/50">
+                    <div className="bg-white rounded-[2.5rem] p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-gray-100/50 relative group overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                         <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-8 text-center md:text-left">Operational Snapshot</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-orange-50/50 rounded-3xl p-6 text-center border border-orange-100">
+                        <div className="grid grid-cols-2 gap-4 relative z-10">
+                            <div className="bg-orange-50/50 rounded-3xl p-6 text-center border border-orange-100 hover:scale-105 transition-transform">
                                 <p className="text-3xl font-black text-orange-600 mb-1">12</p>
                                 <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest">Orders</p>
                             </div>
-                            <div className="bg-indigo-50/50 rounded-3xl p-6 text-center border border-indigo-100">
+                            <div className="bg-indigo-50/50 rounded-3xl p-6 text-center border border-indigo-100 hover:scale-105 transition-transform">
                                 <p className="text-3xl font-black text-indigo-600 mb-1">4.8</p>
                                 <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Rank</p>
                             </div>
@@ -206,11 +226,13 @@ const Profile = () => {
                             </button>
                         ))}
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Right Side: Identity Form */}
-                <div className="lg:col-span-8">
-                    <div className="bg-white rounded-[3rem] p-8 md:p-12 shadow-[0_20px_60px_rgba(0,0,0,0.05)] border border-gray-100 relative overflow-hidden">
+                <motion.div variants={itemVariants} className="lg:col-span-8">
+                    <div className="bg-white rounded-[3rem] p-8 md:p-12 shadow-[0_20px_60px_rgba(0,0,0,0.05)] border border-gray-100 relative overflow-hidden group">
+                        {/* Animated Border Glow */}
+                        <div className="absolute inset-0 border-2 border-transparent group-hover:border-orange-500/10 transition-colors duration-1000 rounded-[3rem]" />
                         {/* Form HUD Header */}
                         <div className="flex items-center justify-between mb-12">
                             <h2 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-3">
@@ -279,8 +301,8 @@ const Profile = () => {
                             </div>
                         </form>
                     </div>
-                </div>
-            </div>
+                </motion.div>
+            </motion.div>
         </div>
     );
 };

@@ -196,12 +196,12 @@ exports.getUserData = async (req, res) => {
 exports.updateUserProfile = async (req, res) => {
     try {
         const { userId } = req.params;
-        const { name, email, phone, address, password } = req.body;
-
+        const { name, email, phone, address, profile_image, password } = req.body;
         const updateData = {};
         if (name) updateData.name = name;
         if (email) updateData.email = email;
         if (phone) updateData.phone = phone;
+        if (profile_image) updateData.profile_image = profile_image;
         // Password handling skipped for now (Supabase Auth handles this better, or store hash)
 
         // 1. Update User Table
@@ -264,6 +264,7 @@ exports.updateUserProfile = async (req, res) => {
                 name: updatedUser.name,
                 email: updatedUser.email,
                 phone: updatedUser.phone,
+                profile_image: updatedUser.profile_image,
                 address: displayAddress
             }
         });
