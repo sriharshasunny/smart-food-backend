@@ -3,7 +3,7 @@ import { API_URL } from '../config';
 import {
     User, Mail, Phone, MapPin, Save, LogOut, ChevronLeft,
     Camera, Check, Edit3, Package, Heart, Star,
-    Shield, Clock, ChevronRight, Sparkles, Building, ListOrdered
+    Shield, Clock, ChevronRight, Sparkles, Building, ListOrdered, Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
@@ -60,6 +60,10 @@ const Profile = () => {
         reader.readAsDataURL(file);
     };
 
+    const handleRemoveImage = () => {
+        setAvatarPreview('REMOVE'); // Special flag to set default placeholder
+    };
+
     const handleChange = e => setFormData(p => ({ ...p, [e.target.name]: e.target.value }));
 
     const handleSubmit = async e => {
@@ -71,6 +75,12 @@ const Profile = () => {
             const url = formData.email
                 ? `${API_URL}/api/user/profile-by-email`
                 : `${API_URL}/api/user/profile/${currentUser._id}`;
+            
+            // Handle image removal or update
+            const finalImage = avatarPreview === 'REMOVE' 
+                ? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop" 
+                : (avatarPreview || user?.profile_image);
+
             const res = await fetch(url, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -80,13 +90,14 @@ const Profile = () => {
                     phone: formData.phone, 
                     address: formData.address,
                     city: formData.city,
-                    profile_image: avatarPreview || user?.profile_image
+                    profile_image: finalImage
                 })
             });
             const data = await res.json();
             if (res.ok) {
                 localStorage.setItem('user', JSON.stringify({ ...currentUser, ...data.user }));
                 setSaved(true);
+                if (avatarPreview === 'REMOVE') setAvatarPreview(null);
                 setTimeout(() => setSaved(false), 2500);
             } else { alert(data.message || 'Update failed'); }
         } catch { alert('Network error'); }
@@ -115,14 +126,15 @@ const Profile = () => {
         <div className="min-h-screen bg-[#f8f9fc] pb-20 overflow-x-hidden">
             <style>{FIELD_CSS}</style>
             
-            {/* Mesh Gradient Hero Section */}
-            <div className="relative h-80 md:h-96 w-full overflow-hidden bg-[#0D0D14]">
-                {/* Dynamic Glows */}
-                <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[120%] bg-gradient-to-br from-orange-600/20 to-transparent blur-[120px] rounded-full animate-pulse" />
-                <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[100%] bg-gradient-to-tl from-indigo-600/20 to-transparent blur-[100px] rounded-full" />
+            {/* Glossy Black Hero Section */}
+            <div className="relative h-80 md:h-96 w-full overflow-hidden bg-[#0a0a0c]">
+                {/* Geometric Glows (Strictly Orange/White) */}
+                <div className="absolute top-[-40%] left-[-10%] w-[80%] h-[150%] bg-gradient-to-br from-orange-600/20 via-orange-500/5 to-transparent blur-[140px] rounded-full animate-pulse" />
+                <div className="absolute top-10 right-20 w-32 h-32 bg-orange-500/10 blur-[80px]" />
+                <div className="absolute -bottom-20 right-0 w-[50%] h-[100%] bg-gradient-to-tl from-white/5 to-transparent blur-[120px] rounded-full" />
                 
-                {/* Pattern Overlay */}
-                <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
+                {/* Subtle Grid Overlay */}
+                <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-end pb-12 relative z-10">
                     <motion.div 
@@ -130,54 +142,70 @@ const Profile = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8"
                     >
-                        {/* Avatar */}
-                        <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                            <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-red-600 rounded-[2.5rem] blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
-                            <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-[2.2rem] bg-neutral-900 border-4 border-white overflow-hidden shadow-2xl">
+                        {/* Avatar Hub */}
+                        <div className="relative group">
+                            <div className="absolute -inset-1.5 bg-gradient-to-r from-orange-500 to-orange-700 rounded-[2.8rem] blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
+                            <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-neutral-900 border-4 border-white overflow-hidden shadow-2xl cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                                 <img
-                                    src={avatarPreview || user?.profile_image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop"}
+                                    src={avatarPreview === 'REMOVE' ? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop" : (avatarPreview || user?.profile_image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop")}
                                     alt="Profile"
                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                                 />
-                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
-                                    <Camera className="text-white w-8 h-8" />
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center translate-y-full group-hover:translate-y-0 transition-transform duration-300 backdrop-blur-sm">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <Camera className="text-white w-7 h-7" />
+                                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Update</span>
+                                    </div>
                                 </div>
                             </div>
+                            
+                            {/* Remove Photo Action */}
+                            <AnimatePresence>
+                                {(avatarPreview || user?.profile_image) && avatarPreview !== 'REMOVE' && (
+                                    <motion.button
+                                        initial={{ opacity: 0, scale: 0.5 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.5 }}
+                                        onClick={(e) => { e.stopPropagation(); handleRemoveImage(); }}
+                                        className="absolute -top-2 -right-2 w-8 h-8 bg-white text-gray-900 rounded-full shadow-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20 border border-gray-100"
+                                        title="Remove Photo"
+                                    >
+                                        <Trash2 size={14} />
+                                    </motion.button>
+                                )}
+                            </AnimatePresence>
+
                             <input type="file" ref={fileInputRef} className="hidden" onChange={handleImageUpload} accept="image/*" />
                         </div>
 
                         <div className="text-center md:text-left flex-1 pb-2">
                             <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
-                                <span className="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-[10px] font-black uppercase tracking-[0.2em] text-orange-400">Executive Tier</span>
-                                <div className="h-1 w-12 bg-orange-500 rounded-full" />
+                                <span className="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-[10px] font-black uppercase tracking-[0.2em] text-orange-400">Verified Identity</span>
+                                <div className="h-1 w-12 bg-white/20 rounded-full" />
                             </div>
                             <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight mb-2">
-                                {formData.name || "Foodie Explorer"}
+                                {formData.name || "Explorer"}
                             </h1>
                             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-gray-400 font-bold uppercase tracking-widest text-[10px]">
-                                <span className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" /> {formData.email}</span>
+                                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-lg border border-white/10"><Mail className="w-3.5 h-3.5 text-orange-500/70" /> {formData.email}</span>
                                 <div className="w-1.5 h-1.5 rounded-full bg-gray-600 hidden md:block" />
-                                <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" /> {formData.phone || "No phone added"}</span>
+                                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-lg border border-white/10"><Phone className="w-3.5 h-3.5 text-orange-500/70" /> {formData.phone || "No Connection"}</span>
                             </div>
                         </div>
 
                         <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                            whileHover={{ scale: 1.05, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={() => window.scrollTo({ top: 600, behavior: 'smooth' })}
-                            className="px-8 py-3.5 bg-white text-gray-900 font-black text-[11px] uppercase tracking-[0.2em] rounded-2xl shadow-xl hover:shadow-orange-500/20 transition-all flex items-center gap-2"
+                            className="px-8 py-4 bg-orange-600 text-white font-black text-[11px] uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-orange-600/30 hover:bg-orange-500 transition-all flex items-center gap-2 border border-orange-500/20"
                         >
-                            Edit Credentials <ChevronRight className="w-4 h-4" />
+                            Modify Profile <ChevronRight className="w-4 h-4" />
                         </motion.button>
                     </motion.div>
                 </div>
                 
-                {/* Wave Cut */}
-                <div className="absolute bottom-0 left-0 w-full leading-none z-10">
-                    <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
-                        <path d="M0 120L1440 120L1440 0C1440 0 1120 120 720 120C320 120 0 0 0 0L0 120Z" fill="#f8f9fc"/>
-                    </svg>
-                </div>
+                {/* Modern Slant Cut */}
+                <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-[#f8f9fc] to-transparent z-10" />
             </div>
 
             <motion.div 
@@ -189,17 +217,17 @@ const Profile = () => {
                 {/* Left Side: Stats & Navigation */}
                 <motion.div variants={itemVariants} className="lg:col-span-4 space-y-8">
                     {/* Stats HUD */}
-                    <div className="bg-white rounded-[2.5rem] p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-gray-100/50 relative group overflow-hidden">
+                    <div className="bg-white rounded-[2.5rem] p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-gray-100 relative group overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                         <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-8 text-center md:text-left">Operational Snapshot</h3>
                         <div className="grid grid-cols-2 gap-4 relative z-10">
-                            <div className="bg-orange-50/50 rounded-3xl p-6 text-center border border-orange-100 hover:scale-105 transition-transform">
+                            <div className="bg-orange-50 rounded-3xl p-6 text-center border border-orange-100 hover:scale-105 transition-transform">
                                 <p className="text-3xl font-black text-orange-600 mb-1">12</p>
                                 <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest">Orders</p>
                             </div>
-                            <div className="bg-indigo-50/50 rounded-3xl p-6 text-center border border-indigo-100 hover:scale-105 transition-transform">
-                                <p className="text-3xl font-black text-indigo-600 mb-1">4.8</p>
-                                <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Rank</p>
+                            <div className="bg-black text-white rounded-3xl p-6 text-center shadow-lg hover:scale-105 transition-transform">
+                                <p className="text-3xl font-black mb-1">4.8</p>
+                                <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest">Rank</p>
                             </div>
                         </div>
                     </div>
@@ -230,9 +258,9 @@ const Profile = () => {
 
                 {/* Right Side: Identity Form */}
                 <motion.div variants={itemVariants} className="lg:col-span-8">
-                    <div className="bg-white rounded-[3rem] p-8 md:p-12 shadow-[0_20px_60px_rgba(0,0,0,0.05)] border border-gray-100 relative overflow-hidden group">
+                    <div className="bg-white/80 backdrop-blur-xl rounded-[3rem] p-8 md:p-12 shadow-[0_20px_60px_rgba(0,0,0,0.03)] border border-white/50 relative overflow-hidden group">
                         {/* Animated Border Glow */}
-                        <div className="absolute inset-0 border-2 border-transparent group-hover:border-orange-500/10 transition-colors duration-1000 rounded-[3rem]" />
+                        <div className="absolute inset-0 border-2 border-transparent group-hover:border-orange-500/10 transition-all duration-1000 rounded-[3rem]" />
                         {/* Form HUD Header */}
                         <div className="flex items-center justify-between mb-12">
                             <h2 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-3">

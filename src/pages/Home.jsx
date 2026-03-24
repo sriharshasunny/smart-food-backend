@@ -290,227 +290,101 @@ const Home = () => {
 
                 {/* --- Content Sections --- */}
 
-                {/* Split Top Section: Restaurants (Large Left) + Quick Recs (Small Right) */}
-                <div className="flex flex-col xl:flex-row gap-2 h-auto xl:h-[390px]">
+                {/* --- RESTAURANT DISCOVERY SECTION (RESTORED OLD STYLE) --- */}
+                <div className="bg-[#fffcf7] rounded-[2.5rem] p-6 md:p-10 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-orange-50/50 relative overflow-hidden">
+                    {/* Background Decor */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/40 rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none" />
 
-                    {/* Left: Top Content (Restaurants) */}
-                    <div className="flex-1 min-w-0 bg-white rounded-[1.25rem] p-2 border border-orange-100 shadow-sm relative overflow-hidden flex flex-col h-[330px] xl:h-full group transition-transform duration-300 transform-gpu">
-                        {/* ... (rest of Left content same) ... */}
-                        {/* Background Blob */}
-                        <div className="absolute top-0 left-0 w-64 h-64 bg-orange-50/50 rounded-full -translate-x-1/3 -translate-y-1/3 opacity-50" />
-
-                        {/* Scroll Buttons (Restaurant - Horizontal) */}
-                        <button
-                            onClick={() => scrollContainer(restaurantContainerRef, 'left')}
-                            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-white/80 hover:bg-black hover:text-white text-gray-700 rounded-full shadow-lg backdrop-blur-sm flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 disabled:opacity-0 active:scale-95 border border-gray-100"
-                        >
-                            <ChevronRight className="rotate-180 w-5 h-5" />
-                        </button>
-                        <button
-                            onClick={() => scrollContainer(restaurantContainerRef, 'right')}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-white/80 hover:bg-black hover:text-white text-gray-700 rounded-full shadow-lg backdrop-blur-sm flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 active:scale-95 border border-gray-100"
-                        >
-                            <ChevronRight className="w-5 h-5" />
-                        </button>
-
-                        <div className="relative z-10 flex flex-row items-center justify-between mb-1 pt-1 px-1 shrink-0 gap-2 h-9">
-                            {/* Toggle Switcher - Compact */}
-                            <div className="flex items-center bg-gray-100 p-0.5 rounded-full relative shrink-0">
-                                <button
-                                    onClick={() => setViewMode('restaurants')}
-                                    className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wide transition-all z-10 ${viewMode === 'restaurants' ? 'text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
-                                >
-                                    Restaurants
-                                </button>
-                                <button
-                                    onClick={() => setViewMode('recs')}
-                                    className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wide transition-all z-10 ${viewMode === 'recs' ? 'text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
-                                >
-                                    AI Picks
-                                </button>
-
-                                {/* Sliding Background */}
-                                <div className={`absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] bg-black rounded-full transition-all duration-300 ease-spring ${viewMode === 'restaurants' ? 'left-0.5' : 'left-[calc(50%+1px)]'}`} />
-                            </div>
-
-                            {/* Filters (Only visible for Restaurants view) - Same Row */}
-                            {viewMode === 'restaurants' && (
-                                <div className="flex gap-2 overflow-x-auto hide-scrollbar flex-1 justify-end items-center h-full">
-                                    <button onClick={() => setRestaurantFilters(prev => ({ ...prev, fastDelivery: !prev.fastDelivery }))} className={`whitespace-nowrap px-2.5 py-1 rounded-full text-[9px] font-bold transition-all border shrink-0 ${restaurantFilters.fastDelivery ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200'}`}>Fast Delivery</button>
-                                    <button onClick={() => setRestaurantFilters(prev => ({ ...prev, topRated: !prev.topRated }))} className={`whitespace-nowrap px-2.5 py-1 rounded-full text-[9px] font-bold transition-all border shrink-0 ${restaurantFilters.topRated ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-200'}`}>Top Rated</button>
-                                </div>
-                            )}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 relative z-10">
+                        {/* Tab Switcher */}
+                        <div className="flex items-center bg-gray-100/80 p-1 rounded-full relative w-fit backdrop-blur-sm self-center md:self-start">
+                            <button
+                                onClick={() => setViewMode('restaurants')}
+                                className={`px-8 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all z-10 ${viewMode === 'restaurants' ? 'text-white shadow-lg' : 'text-gray-500 hover:text-gray-900'}`}
+                            >
+                                Restaurants
+                            </button>
+                            <button
+                                onClick={() => setViewMode('recs')}
+                                className={`px-8 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all z-10 ${viewMode === 'recs' ? 'text-white shadow-lg' : 'text-gray-500 hover:text-gray-900'}`}
+                            >
+                                AI Picks
+                            </button>
+                            {/* Sliding Background */}
+                            <motion.div 
+                                layoutId="home-tab-bg"
+                                className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-black rounded-full z-0"
+                                initial={false}
+                                animate={{ x: viewMode === 'restaurants' ? 0 : '100%' }}
+                                transition={{ type: "spring", stiffness: 400, damping: 35 }}
+                            />
                         </div>
 
-                        {/* Content Area */}
-                        <ErrorBoundary key={viewMode}>
-                            <div ref={restaurantContainerRef} data-lenis-prevent className="w-full overflow-x-auto overflow-y-hidden pb-4 pt-1 hide-scrollbar flex snap-x scroll-pl-4 gap-4 relative z-10 h-full items-center px-1 scroll-smooth overscroll-contain transform-gpu">
+                        {/* Filter Pills */}
+                        <div className="flex items-center gap-3 self-center md:self-end">
+                            <button 
+                                onClick={() => setRestaurantFilters(prev => ({ ...prev, fastDelivery: !prev.fastDelivery }))}
+                                className={`px-5 py-2 rounded-full text-[11px] font-black uppercase tracking-wider border transition-all ${restaurantFilters.fastDelivery ? 'bg-black text-white border-black shadow-lg' : 'bg-white text-gray-500 border-gray-100 hover:border-gray-300'}`}
+                            >
+                                Fast Delivery
+                            </button>
+                            <button 
+                                onClick={() => setRestaurantFilters(prev => ({ ...prev, topRated: !prev.topRated }))}
+                                className={`px-5 py-2 rounded-full text-[11px] font-black uppercase tracking-wider border transition-all ${restaurantFilters.topRated ? 'bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-500/20' : 'bg-white text-gray-500 border-gray-100 hover:border-gray-300'}`}
+                            >
+                                Top Rated
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Content Grid */}
+                    <div className="relative z-10 min-h-[400px]">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={viewMode}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.3 }}
+                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+                            >
                                 {loadingData ? (
-                                    Array.from({ length: 4 }).map((_, i) => (
-                                        <div key={`skel-${i}`} className="min-w-[260px] snap-start h-full">
+                                    Array.from({ length: 8 }).map((_, i) => (
+                                        <div key={`skel-${i}`} className="h-full">
                                             <SkeletonCard />
                                         </div>
                                     ))
                                 ) : viewMode === 'restaurants' ? (
-                                    filteredData.restaurants.map((restaurant) => (
-                                        <RestaurantCard key={restaurant.id} restaurant={restaurant} />
-                                    ))
+                                    filteredData.restaurants.length > 0 ? (
+                                        filteredData.restaurants.map((restaurant) => (
+                                            <RestaurantCard key={restaurant.id} restaurant={restaurant} />
+                                        ))
+                                    ) : (
+                                        <div className="col-span-full py-20 text-center">
+                                            <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                                                <Zap size={30} />
+                                            </div>
+                                            <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">No matching restaurants found</p>
+                                        </div>
+                                    )
                                 ) : (
-                                    filteredData.dishes.slice(0, 8).map((dish) => (
-                                        <div key={dish.id} className="min-w-[200px] snap-start h-full">
-                                            <FoodCard food={dish} onAdd={handleAddToCart} />
+                                    filteredData.dishes.length > 0 ? (
+                                        filteredData.dishes.slice(0, 12).map((dish) => (
+                                            <FoodCard key={dish.id} food={dish} onAdd={handleAddToCart} />
+                                        ))
+                                    ) : (
+                                        <div className="col-span-full py-20 text-center">
+                                            <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                                                <Sparkles size={30} />
+                                            </div>
+                                            <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">No AI picks available yet</p>
                                         </div>
-                                    ))
+                                    )
                                 )}
-                            </div>
-                        </ErrorBoundary>
+                            </motion.div>
+                        </AnimatePresence>
                     </div>
-
-
-                    {/* ══ Right: Trending Picks ══ */}
-                    <div className="w-full xl:w-[430px] shrink-0 bg-white rounded-[1.25rem] border border-orange-100 shadow-sm relative overflow-hidden flex flex-col h-[390px] xl:h-full">
-
-                        {/* Subtle background blob */}
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-orange-50/60 rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none" />
-
-                        {/* ── Header (fixed) ── */}
-                        <div className="flex justify-between items-center px-4 pt-4 pb-2 relative z-10 shrink-0">
-                            <div className="flex items-center gap-2">
-                                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center shadow-sm shadow-orange-300">
-                                    <Flame className="w-3.5 h-3.5 text-white" />
-                                </div>
-                                <div>
-                                    <h2 className="text-sm font-black text-gray-900 leading-none">Trending Picks</h2>
-                                    <div className="flex items-center gap-1 mt-0.5">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-                                        <span className="text-[9px] font-bold text-orange-500/80 uppercase tracking-[0.2em]">Live · AI Curated</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => navigate('/recommendations')}
-                                className="group/allbtn text-xs font-black text-orange-600 hover:text-white flex items-center gap-1 transition-all duration-300 bg-orange-50 hover:bg-orange-500 px-4 py-2 rounded-full shadow-sm hover:shadow-orange-500/30"
-                            >
-                                View All <ChevronRight size={14} className="group-hover/allbtn:translate-x-0.5 transition-transform" />
-                            </button>
-                        </div>
-
-                        {/* ── Scrollable cards area ── */}
-                        <div
-                            ref={trendingContainerRef}
-                            data-lenis-prevent
-                            className="flex-1 overflow-y-auto px-3 pt-1 pb-2 flex flex-col gap-2 hide-scrollbar scroll-smooth overscroll-contain"
-                        >
-                            {(loadingData || loadingRecs) ? (
-                                Array.from({ length: 4 }).map((_, i) => (
-                                    <div key={`skel-h-${i}`} className="h-[82px] shrink-0">
-                                        <SkeletonCard variant="horizontal" />
-                                    </div>
-                                ))
-                            ) : (() => {
-                                const sourceItems = trendingRecs.length > 0 ? trendingRecs : filteredData.dishes;
-                                const visibleItems = sourceItems.slice(0, trendingVisible);
-                                const hasMore = trendingVisible < sourceItems.length;
-
-                                return (
-                                    <>
-                                        {visibleItems.map((dish, idx) => (
-                                            <motion.div
-                                                key={dish.id || dish._id || idx}
-                                                initial={{ opacity: 0, y: 8 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: idx * 0.05, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                                                className="bg-white relative overflow-hidden rounded-[1.1rem] p-2 flex gap-3 border border-gray-100
-                                                           hover:border-orange-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200
-                                                           group/item items-center shrink-0 cursor-pointer"
-                                            >
-                                                {/* Glossy border overlay */}
-                                                <div className="absolute inset-0 rounded-[1.1rem] border border-white/60 pointer-events-none z-20" />
-
-                                                {/* Rank badge */}
-                                                <div className="absolute top-1.5 left-1.5 w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center z-10 shadow-sm">
-                                                    <span className="text-[7px] font-black text-white">{idx + 1}</span>
-                                                </div>
-
-                                                {/* Image */}
-                                                <div className="h-[4.5rem] w-[4.5rem] rounded-2xl overflow-hidden relative shrink-0 shadow-sm group-hover/item:shadow-md transition-all">
-                                                    <img
-                                                        src={dish.image}
-                                                        alt={dish.name}
-                                                        loading="lazy"
-                                                        className="w-full h-full object-cover transform group-hover/item:scale-110 transition-transform duration-700 ease-out"
-                                                    />
-                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1 pt-3 flex justify-center">
-                                                        <span className="text-[8px] font-bold text-white">⭐ {dish.rating || 4.5}</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* Content */}
-                                                <div className="flex-1 min-w-0 flex flex-col justify-between h-full py-0.5 gap-1.5">
-                                                    <div>
-                                                        {dish._score != null && (
-                                                            <span className="text-[9px] font-bold text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded-md inline-block tracking-wider uppercase mb-0.5">
-                                                                Match {Math.round(dish._score)}%
-                                                            </span>
-                                                        )}
-                                                        <h4 className="font-bold text-gray-900 text-[14px] leading-tight line-clamp-1 group-hover/item:text-orange-600 transition-colors">
-                                                            {dish.name}
-                                                        </h4>
-                                                        <p className="text-[10px] text-gray-400 font-medium line-clamp-1 mt-0.5">
-                                                            {dish.category || dish.cuisine} · {(dish.isVeg || dish.is_veg) ? 'Veg' : 'Non-Veg'}
-                                                        </p>
-                                                    </div>
-
-                                                    <div className="flex justify-between items-end">
-                                                        <div className="flex flex-col">
-                                                            <span className="text-[10px] text-gray-400 line-through decoration-orange-300/50 decoration-2">₹{Math.round(dish.price * 1.2)}</span>
-                                                            <span className="text-gray-900 font-black text-sm leading-none">₹{dish.price}</span>
-                                                        </div>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); addToCart(dish); }}
-                                                            className="h-8 px-4 rounded-full bg-gray-50 hover:bg-gradient-to-r hover:from-orange-500 hover:to-red-500 text-gray-600 hover:text-white text-xs font-bold transition-all shadow-sm hover:shadow-orange-200 hover:shadow-lg active:scale-95 flex items-center gap-1 group/btn border border-gray-100 hover:border-transparent"
-                                                        >
-                                                            ADD <span className="text-sm font-extrabold group-hover/btn:rotate-90 transition-transform duration-300 ml-0.5">+</span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        ))}
-
-                                        {/* End spacer so last card isn't cut off */}
-                                        <div className="h-1 shrink-0" />
-                                    </>
-                                );
-                            })()}
-                        </div>
-
-                        {/* ── Load More — pinned at bottom of panel ── */}
-                        {!loadingData && !loadingRecs && (() => {
-                            const sourceItems = trendingRecs.length > 0 ? trendingRecs : filteredData.dishes;
-                            const hasMore = trendingVisible < sourceItems.length;
-                            const seenAll = !hasMore && sourceItems.length > 0;
-                            return (
-                                <div className="px-3 pb-3 pt-1 shrink-0 relative z-10">
-                                    {hasMore ? (
-                                        <button
-                                            onClick={() => setTrendingVisible(v => v + TRENDING_STEP)}
-                                            className="w-full py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-orange-600
-                                                       border border-orange-200 hover:border-orange-400 bg-orange-50 hover:bg-orange-500 hover:text-white
-                                                       transition-all duration-300 flex items-center justify-center gap-2 shadow-sm hover:shadow-orange-200 active:scale-[0.98]"
-                                        >
-                                            <ChevronDown className="w-3.5 h-3.5" />
-                                            Load More Picks
-                                        </button>
-                                    ) : seenAll ? (
-                                        <div className="text-center text-[9px] text-gray-400 font-bold uppercase tracking-widest py-1">
-                                            ✓ All {sourceItems.length} picks shown · <button onClick={() => navigate('/recommendations')} className="text-orange-500 hover:underline">View Full AI Page</button>
-                                        </div>
-                                    ) : null}
-                                </div>
-                            );
-                        })()}
-                    </div> {/* Close Trending Picks panel */}
-                </div> {/* Close Recs + Top Section */}
+                </div>
 
 
                 {/* --- MENU PARTITION --- */}
