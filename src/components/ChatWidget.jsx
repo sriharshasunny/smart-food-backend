@@ -12,19 +12,19 @@ import { optimizeImage } from '../utils/imageOptimizer';
 
 const pulseGlow = `
 @keyframes pulse-glow {
-  0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.5); }
-  70% { box-shadow: 0 0 0 20px rgba(249, 115, 22, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.6); }
+  70% { box-shadow: 0 0 0 18px rgba(249, 115, 22, 0); }
   100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
 }
 
 @keyframes float-orb {
   0% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-10px) rotate(3deg); }
+  50% { transform: translateY(-8px) rotate(2deg); }
   100% { transform: translateY(0px) rotate(0deg); }
 }
 
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(15px) scale(0.98); }
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
@@ -32,6 +32,15 @@ const pulseGlow = `
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+@keyframes chat-bounce {
+  0%,80%,100% { transform: translateY(0); }
+  40% { transform: translateY(-6px); }
+}
+
+.chat-dot { animation: chat-bounce 1.2s ease-in-out infinite; }
+.chat-dot:nth-child(2) { animation-delay: 0.15s; }
+.chat-dot:nth-child(3) { animation-delay: 0.3s; }
 `;
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -483,67 +492,78 @@ const ChatWidget = () => {
     return (
         <div className={isOceanTheme ? 'theme-ocean' : ''}>
             <style>{pulseGlow}</style>
-            {/* ── Floating UFO Trigger ── Black & Cyan */}
+            {/* ── Floating Trigger — Premium Gradient Button ── */}
             <button
                 onClick={() => { setIsOpen(o => !o); setUnread(0); }}
-                className="fixed bottom-6 right-6 z-[60] w-16 h-16 flex items-center justify-center rounded-full bg-neutral-900 shadow-[0_10px_30px_rgba(249,115,22,0.3)] hover:shadow-[0_15px_40px_rgba(249,115,22,0.5)] active:scale-95 transition-all duration-300 border-2 border-themeAccent-500/30 group"
-                style={{ animation: 'float-orb 4s ease-in-out infinite' }}
+                className="fixed bottom-6 right-6 z-[60] w-16 h-16 flex items-center justify-center rounded-2xl
+                           bg-gradient-to-br from-orange-500 via-orange-600 to-red-600
+                           shadow-[0_8px_32px_rgba(249,115,22,0.45)] hover:shadow-[0_12px_40px_rgba(249,115,22,0.65)]
+                           active:scale-95 transition-all duration-300 group border border-orange-400/30"
+                style={{ animation: isOpen ? 'none' : 'float-orb 4s ease-in-out infinite' }}
             >
+                {/* Ripple ring */}
+                {!isOpen && <span className="absolute inset-0 rounded-2xl border-2 border-orange-400 opacity-40"
+                    style={{ animation: 'pulse-glow 2s ease-out infinite' }} />}
+
                 {isOpen ? (
-                    <X size={26} className="text-themeAccent-500" />
+                    <X size={24} className="text-white" />
                 ) : (
                     <div className="relative flex items-center justify-center w-full h-full">
-                        <Bot size={28} className="text-themeAccent-500 group-hover:rotate-12 transition-transform duration-300" />
+                        <Bot size={26} className="text-white group-hover:scale-110 transition-transform duration-300" />
                         {unread > 0 && (
-                            <span className="absolute -top-3 -right-3 min-w-[20px] h-[20px] px-1 rounded-full bg-themeAccent-600 border-[2px] border-neutral-900 flex items-center justify-center text-[10px] font-black text-white shadow-md">{unread}</span>
+                            <span className="absolute -top-2.5 -right-2.5 min-w-[20px] h-[20px] px-1 rounded-full
+                                           bg-white text-orange-600 border-2 border-orange-500
+                                           flex items-center justify-center text-[10px] font-black shadow-lg">
+                                {unread}
+                            </span>
                         )}
                     </div>
                 )}
             </button>
 
-            {/* ── Chat Window ── Switch to Black Theme */}
             {isOpen && (
                 <div className={`
                     fixed bottom-28 right-4 md:right-6 z-50 flex flex-col font-sans
-                    ${isOceanTheme ? 'premium-glass' : 'bg-neutral-950 border border-neutral-800'} 
+                    bg-[#0a0a0f] border border-orange-500/20
                     rounded-[2rem] overflow-hidden
-                    shadow-[0_8px_32px_rgba(0,0,0,0.5)]
+                    shadow-[0_20px_60px_rgba(0,0,0,0.6),0_0_0_1px_rgba(249,115,22,0.1)]
                     transition-all duration-300 animate-slide-up origin-bottom-right
                     ${isExpanded ? 'w-[95vw] md:w-[600px] h-[85vh] max-h-[880px]' : 'w-[92vw] md:w-[420px] h-[680px] max-h-[80vh]'}
                 `}>
+                    {/* Top glow line */}
+                    <div className="absolute top-0 left-[15%] right-[15%] h-px bg-gradient-to-r from-transparent via-orange-500/60 to-transparent" />
 
-                    {/* ── Header ── Black & Cyan */}
-                    <div className={`flex items-center justify-between px-5 py-4 ${isOceanTheme ? 'bg-white/[0.03]' : 'bg-neutral-900'} border-b border-white/[0.05] shrink-0`}>
+                    {/* ── Header ── */}
+                    <div className="flex items-center justify-between px-5 py-4 bg-[#0d0d14] border-b border-white/[0.06] shrink-0">
                         <div className="flex items-center gap-3">
-                            {/* UFO Bot avatar */}
+                            {/* Bot avatar */}
                             <div className="relative">
-                                <div
-                                    className={`w-12 h-12 rounded-full ${isOceanTheme ? 'bg-cyan-500/20' : 'bg-themeAccent-500'} flex items-center justify-center shadow-lg shadow-themeAccent-900/40 border-2 border-themeAccent-400/20`}
-                                >
-                                    <Bot size={22} className={isOceanTheme ? "text-cyan-400" : "text-white"} />
+                                <div className="w-12 h-12 rounded-[14px] bg-gradient-to-br from-orange-500 to-red-600
+                                               flex items-center justify-center shadow-lg shadow-orange-500/30 border border-orange-400/20">
+                                    <Bot size={22} className="text-white" />
                                 </div>
-                                <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 ${isOceanTheme ? 'bg-cyan-400' : 'bg-green-500'} border-[2.5px] border-neutral-900 rounded-full shadow-sm`} />
+                                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-[2.5px] border-[#0d0d14] rounded-full shadow-sm
+                                               shadow-[0_0_6px_rgba(34,197,94,0.6)]" />
                             </div>
                             <div>
-                                <h3 className="text-[15px] font-black text-white tracking-tight leading-none uppercase">Smart Assistant</h3>
+                                <h3 className="text-[15px] font-black text-white tracking-tight leading-none">SmartBot</h3>
                                 <div className="flex items-center gap-1.5 mt-1">
                                     <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-                                    <span className="text-[10px] text-gray-400 font-bold tracking-wide uppercase">AI Engine · Active</span>
+                                    <span className="text-[10px] text-gray-500 font-bold tracking-wide">AI Engine · Online</span>
                                 </div>
                             </div>
                         </div>
                         <div className="flex items-center gap-0.5">
-                            <button
-                                onClick={() => setView(v => v === 'history' ? 'chat' : 'history')}
-                                title="History"
-                                className={`p-2 rounded-xl transition-all ${view === 'history' ? 'bg-orange-50 text-themeAccent-500' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'}`}
-                            >
+                            <button onClick={() => setView(v => v === 'history' ? 'chat' : 'history')} title="History"
+                                className={`p-2 rounded-xl transition-all ${view === 'history'
+                                    ? 'bg-orange-500/20 text-orange-400'
+                                    : 'text-white/30 hover:text-white/70 hover:bg-white/5'}`}>
                                 <History size={16} />
                             </button>
-                            <button onClick={() => setIsExpanded(e => !e)} className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-all">
+                            <button onClick={() => setIsExpanded(e => !e)} className="p-2 rounded-xl text-white/30 hover:text-white/70 hover:bg-white/5 transition-all">
                                 {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
                             </button>
-                            <button onClick={() => setIsOpen(false)} className="p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all">
+                            <button onClick={() => setIsOpen(false)} className="p-2 rounded-xl text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all">
                                 <X size={18} />
                             </button>
                         </div>
@@ -625,9 +645,10 @@ const ChatWidget = () => {
                                                 )}
 
                                                 <div className="max-w-[88%] animate-fade-in">
-                                                    <div className={`px-4 py-3 rounded-2xl shadow-sm ${isUser
-                                                        ? 'bg-themeAccent-600 text-white rounded-tr-md shadow-themeAccent-900/20'
-                                                        : 'bg-neutral-900 text-gray-100 rounded-tl-md border border-neutral-800'
+                                                    <div className={`px-4 py-3 rounded-2xl shadow-sm text-[13px] leading-relaxed ${
+                                                        isUser
+                                                            ? 'bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-tr-sm shadow-orange-500/20'
+                                                            : 'bg-[#14141f] text-gray-200 rounded-tl-sm border border-white/[0.07]'
                                                         }`}>
                                                         {renderContent(msg, isLatest)}
                                                     </div>
@@ -642,16 +663,15 @@ const ChatWidget = () => {
                                     );
                                 })}
 
-                                 {/* Loading */}
-                                {loading && (
+                                                                {loading && (
                                     <div className="flex items-center gap-2.5 animate-fade-in">
-                                        <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center flex-shrink-0 shadow-sm border border-neutral-700">
-                                            <Bot size={14} className="text-themeAccent-500" />
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center flex-shrink-0 shadow-md shadow-orange-500/30">
+                                            <Bot size={14} className="text-white" />
                                         </div>
-                                        <div className="bg-neutral-900 border border-neutral-800 px-5 py-3.5 rounded-2xl rounded-tl-md flex items-center gap-1.5 shadow-sm">
-                                            {[0, 1, 2].map(i => (
-                                                <span key={i} className="w-2 h-2 bg-themeAccent-500 rounded-full animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
-                                            ))}
+                                        <div className="bg-[#14141f] border border-white/[0.07] px-5 py-3.5 rounded-2xl rounded-tl-sm flex items-center gap-1.5 shadow-sm">
+                                            <span className="chat-dot w-2 h-2 bg-orange-500 rounded-full" />
+                                            <span className="chat-dot w-2 h-2 bg-orange-400 rounded-full" />
+                                            <span className="chat-dot w-2 h-2 bg-orange-300 rounded-full" />
                                         </div>
                                     </div>
                                 )}
@@ -685,29 +705,32 @@ const ChatWidget = () => {
                                 </div>
                             )}
 
-                             {/* ── Input Bar ── Dark & Cyan */}
-                            <div className="px-4 pb-4 pt-3 bg-neutral-900 border-t border-neutral-800 shrink-0">
-                                <div className="flex items-center gap-2 bg-neutral-800 border border-neutral-700 shadow-sm rounded-full px-1.5 py-1.5 focus-within:border-themeAccent-500/50 transition-all">
+                                             {/* ── Input Bar ── */}
+                            <div className="px-4 pb-5 pt-3 bg-[#0d0d14] border-t border-white/[0.06] shrink-0">
+                                <div className="flex items-center gap-2 bg-[#1a1a28] border border-white/10 shadow-inner rounded-2xl px-2 py-1.5 focus-within:border-orange-500/40 focus-within:shadow-[0_0_0_3px_rgba(249,115,22,0.08)] transition-all duration-300">
                                     <input
                                         ref={inputRef}
                                         type="text"
                                         value={input}
                                         onChange={e => setInput(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && !e.shiftKey && submitMessage(input)}
-                                        placeholder="Ask for recommendations..."
-                                        className="flex-1 bg-transparent text-white text-[14px] px-4 py-2 focus:outline-none placeholder-gray-500 min-w-0 font-medium"
+                                        placeholder="Ask me anything about food..."
+                                        className="flex-1 bg-transparent text-white text-[13px] px-3 py-2 focus:outline-none placeholder-gray-600 min-w-0 font-medium"
                                     />
                                     <button
                                         onClick={() => submitMessage(input)}
                                         disabled={loading || !input.trim()}
-                                        className="w-10 h-10 rounded-full bg-themeAccent-500 hover:bg-themeAccent-600 disabled:bg-neutral-700 flex items-center justify-center text-white transition-all active:scale-90 shadow-md shadow-themeAccent-900/20 disabled:shadow-none flex-shrink-0"
+                                        className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500
+                                                   disabled:from-neutral-700 disabled:to-neutral-800 disabled:shadow-none
+                                                   flex items-center justify-center text-white transition-all active:scale-90
+                                                   shadow-md shadow-orange-500/30 flex-shrink-0"
                                     >
-                                        <Send size={16} className="translate-x-0.5 -translate-y-px pl-0.5" />
+                                        <Send size={15} className="translate-x-px" />
                                     </button>
                                 </div>
-                                <div className="flex items-center justify-center gap-1 mt-2">
-                                    <Sparkles size={10} className="text-themeAccent-400 opacity-80" />
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Powered by Gemini AI Engine</p>
+                                <div className="flex items-center justify-center gap-1.5 mt-2">
+                                    <Sparkles size={9} className="text-orange-500/60" />
+                                    <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest">Powered by Gemini AI</p>
                                 </div>
                             </div>
                         </>

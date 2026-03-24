@@ -76,7 +76,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             <div
                 className={`fixed top-0 left-0 h-full w-[300px] z-[60] transform transition-transform duration-300 ease-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
             >
-                <div className={`h-full w-full relative overflow-hidden shadow-2xl flex flex-col rounded-tr-[2rem] transition-colors duration-500
+                <div className={`h-full w-full relative overflow-hidden shadow-2xl flex flex-col min-h-0 rounded-tr-[2rem] transition-colors duration-500
                     ${isSpaceTheme
                         ? 'bg-[#05050f]/97 backdrop-blur-[40px] border-r border-white/10'
                         : 'bg-white'
