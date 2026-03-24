@@ -9,181 +9,75 @@ import { Rocket, Sparkles, Zap, ShieldCheck, ChevronRight, Info, MapPin, Star, B
 const SPACE_CSS = `
   @keyframes stars-scroll {
     from { transform: translateY(0); }
-    to { transform: translateY(-500px); }
+    to { transform: translateY(-1000px); }
   }
-  @keyframes scan {
-    0% { transform: translateY(-100%); opacity: 0; }
-    50% { opacity: 0.3; }
-    100% { transform: translateY(100vh); opacity: 0; }
+  @keyframes nebula-flow {
+    0% { transform: translate(0, 0) scale(1); opacity: 0.4; }
+    50% { transform: translate(5%, 5%) scale(1.1); opacity: 0.6; }
+    100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
   }
-  @keyframes ufo-bubble-in {
-    0% { transform: scale(0) translateY(20px); opacity: 0; }
-    100% { transform: scale(1) translateY(0); opacity: 1; }
+  @keyframes scan-hud {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100vh); }
   }
-  .star-field-animated {
-    animation: stars-scroll 60s linear infinite;
-    background-image: 
-      radial-gradient(1px 1px at 25px 35px, #fff, rgba(0,0,0,0)),
-      radial-gradient(1px 1px at 50px 80px, #fff, rgba(0,0,0,0)),
-      radial-gradient(2px 2px at 100px 150px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
-      radial-gradient(1.5px 1.5px at 150px 40px, #fff, rgba(0,0,0,0));
-    background-size: 500px 500px;
+  .star-layer-1 {
+    animation: stars-scroll 120s linear infinite;
+    background-image: radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)), radial-gradient(1px 1px at 50px 70px, rgba(255,255,255,0.8), rgba(0,0,0,0));
+    background-size: 400px 400px;
   }
-  .premium-glass {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+  .star-layer-2 {
+    animation: stars-scroll 80s linear infinite;
+    background-image: radial-gradient(1.5px 1.5px at 100px 100px, #fff, rgba(0,0,0,0)), radial-gradient(1px 1px at 150px 200px, rgba(255,255,255,0.6), rgba(0,0,0,0));
+    background-size: 600px 600px;
   }
-  .card-shine::after {
-    content: '';
-    position: absolute;
-    top: -50%; left: -50%; width: 200%; height: 200%;
-    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.03), transparent);
-    transform: rotate(45deg);
-    transition: 0.6s;
-    pointer-events: none;
+  .star-layer-3 {
+    animation: stars-scroll 40s linear infinite;
+    background-image: radial-gradient(2px 2px at 300px 300px, #fff, rgba(0,0,0,0));
+    background-size: 800px 800px;
   }
-  .group:hover .card-shine::after {
-    left: 100%;
+  .hud-grid {
+    background-image: linear-gradient(rgba(34, 211, 238, 0.03) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(34, 211, 238, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
   }
-  .ufo-message-bubble {
-    animation: ufo-bubble-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  .premium-glass-hud {
+    background: rgba(10, 10, 18, 0.6);
+    backdrop-filter: blur(25px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.9);
   }
-  .hide-scrollbar::-webkit-scrollbar { display: none; }
-  .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .text-hud {
+    font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+  .scanner-line {
+    animation: scan-hud 8s ease-in-out infinite;
+    background: linear-gradient(to bottom, transparent, rgba(34, 211, 238, 0.1), transparent);
+  }
 `;
 
 const StarField = () => (
-  <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#020617]">
-    {/* Nebula / Glow Effects - Colorfully Deep Space */}
-    <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] nebula-cyan blur-[120px] rounded-full animate-[nebula-flow_25s_ease-in-out_infinite]" />
-    <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] nebula-purple blur-[150px] rounded-full animate-[nebula-flow_30s_ease-in-out_infinite_reverse]" />
-    <div className="absolute top-[20%] right-[10%] w-[40%] h-[40%] bg-indigo-500/5 blur-[100px] rounded-full animate-[nebula-flow_22s_ease-in-out_infinite]" />
-    
-    <div className="absolute inset-0 star-field-animated opacity-40" />
-    <div className="absolute inset-0 star-field-animated opacity-15 scale-150 rotate-12" />
-    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-950/5 to-transparent" />
+  <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#02040a]">
+    {/* Parallax Stars */}
+    <div className="absolute inset-0 star-layer-1 opacity-20" />
+    <div className="absolute inset-0 star-layer-2 opacity-30 scale-125" />
+    <div className="absolute inset-0 star-layer-3 opacity-40 scale-150 rotate-6" />
+
+    {/* HUD Elements */}
+    <div className="absolute inset-0 hud-grid opacity-[0.03]" />
+    <div className="absolute inset-0 scanner-line h-[400px] w-full opacity-20" />
+
+    {/* Nebula / Glow Effects */}
+    <div className="absolute top-[-20%] left-[-10%] w-[80%] h-[80%] bg-cyan-500/10 blur-[140px] rounded-full animate-[nebula-flow_40s_ease-in-out_infinite]" />
+    <div className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[70%] bg-indigo-500/15 blur-[160px] rounded-full animate-[nebula-flow_35s_ease-in-out_infinite_reverse]" />
+    <div className="absolute top-[30%] right-[20%] w-[40%] h-[40%] bg-purple-500/5 blur-[120px] rounded-full animate-[nebula-flow_45s_ease-in-out_infinite]" />
+
+    {/* Vignette */}
+    <div className="absolute inset-0 bg-gradient-to-b from-[#02040a] via-transparent to-[#02040a] opacity-80" />
   </div>
 );
 
-const UFOAssistant = ({ userId }) => {
-  const canvasRef = useRef(null);
-  const [ufoPos, setUfoPos] = useState({ x: -100, y: 100, opacity: 0 });
-  const ufoState = useRef({
-    x: -100, y: 100, vx: 0, vy: 0, rotation: 0,
-    targetX: 200, targetY: 200, trail: [],
-    hidingUntil: 0, opacity: 0
-  });
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let frame;
-
-    const loop = (time) => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const u = ufoState.current;
-      
-      const isHiding = time < u.hidingUntil;
-      
-      if (isHiding) {
-        u.opacity = Math.max(0, u.opacity - 0.1);
-      } else {
-        u.opacity = Math.min(1, u.opacity + 0.05);
-      }
-
-      const dx = u.targetX - u.x;
-      const dy = u.targetY - u.y;
-      const dist = Math.hypot(dx, dy);
-      
-      if (dist < 50) {
-        if (Math.random() < 0.02) {
-          u.targetX = Math.random() * (canvas.width - 200) + 100;
-          u.targetY = Math.random() * (canvas.height - 200) + 100;
-        }
-      } else {
-        u.vx += (dx / dist) * 0.08;
-        u.vy += (dy / dist) * 0.08;
-      }
-      
-      u.vx *= 0.97; u.vy *= 0.97;
-      u.x += u.vx; u.y += u.vy;
-      u.rotation = u.vx * 0.1;
-      
-      // Trail
-      if (u.opacity > 0.1 && Math.hypot(u.vx, u.vy) > 0.2) {
-        u.trail.push({ x: u.x, y: u.y, opacity: u.opacity * 0.6, size: 2 });
-      }
-      if (u.trail.length > 20) u.trail.shift();
-      u.trail.forEach(p => {
-        p.opacity -= 0.02;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
-        ctx.fillStyle = `rgba(0, 255, 200, ${p.opacity})`; ctx.fill();
-      });
-
-      if (u.opacity > 0) {
-        ctx.save();
-        ctx.globalAlpha = u.opacity;
-        ctx.translate(u.x, u.y);
-        ctx.rotate(u.rotation);
-        ctx.shadowColor = 'rgba(0, 255, 150, 0.8)'; ctx.shadowBlur = 20;
-        ctx.font = '40px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText('🛸', 0, 0);
-        ctx.restore();
-      }
-
-      setUfoPos({ x: u.x, y: u.y, opacity: u.opacity });
-      frame = requestAnimationFrame(loop);
-    };
-
-    const handleCanvasClick = (e) => {
-      const u = ufoState.current;
-      const dist = Math.hypot(e.clientX - u.x, e.clientY - u.y);
-      if (dist < 50 && u.opacity > 0) {
-        // Hide permanently when clicked
-        u.hidingUntil = Infinity; 
-        u.vx *= 10; u.vy *= 10;
-        document.body.style.cursor = ''; // Reset cursor
-      }
-    };
-
-    const handleMouseMove = (e) => {
-      const u = ufoState.current;
-      const dist = Math.hypot(e.clientX - u.x, e.clientY - u.y);
-      if (dist < 50 && u.opacity > 0.5) {
-        document.body.style.cursor = 'pointer';
-      } else {
-        document.body.style.cursor = '';
-      }
-    };
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-
-    window.addEventListener('resize', resize);
-    window.addEventListener('mousedown', handleCanvasClick);
-    window.addEventListener('mousemove', handleMouseMove);
-    resize();
-    frame = requestAnimationFrame(loop);
-    return () => { 
-      cancelAnimationFrame(frame); 
-      window.removeEventListener('resize', resize);
-      window.removeEventListener('mousedown', handleCanvasClick);
-      window.removeEventListener('mousemove', handleMouseMove);
-      document.body.style.cursor = '';
-    };
-  }, []);
-
-  return (
-    <div className="fixed inset-0 z-[100] pointer-events-none overflow-hidden">
-      <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
-    </div>
-  );
-};
+// UFOAssistant removed for a more professional HUD theme
 
 
 
@@ -210,78 +104,84 @@ const FoodGridCard = ({ food, userId, onAdd }) => {
 
   return (
     <div
-      className="group relative bg-white/[0.02] backdrop-blur-3xl rounded-[1.5rem] overflow-hidden 
-                 border border-white/[0.05] hover:border-themeAccent-500/40
-                 transition-all duration-700 ease-out flex flex-col h-full
-                 hover:shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_30px_rgba(6,182,212,0.1)]"
+      className="group relative bg-[#0a0a14]/40 backdrop-blur-2xl rounded-2xl overflow-hidden 
+                 border border-white/10 hover:border-themeAccent-500/50
+                 transition-all duration-500 ease-out flex flex-col h-full
+                 hover:shadow-[0_0_40px_rgba(6,182,212,0.15)]"
     >
-      <div className="relative h-44 overflow-hidden">
+      {/* HUD Scanner Animation on hover */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none z-30">
+        <div className="absolute inset-x-0 h-px bg-themeAccent-400/30 blur-[2px] animate-[scan-hud_2s_linear_infinite]" />
+      </div>
+
+      <div className="relative h-48 overflow-hidden">
         {food.image ? (
           <img
             src={food.image}
             alt={food.name}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 brightness-[0.7] group-hover:brightness-105"
+            className="w-full h-full object-cover transition-all duration-1000 brightness-[0.7] group-hover:brightness-90 group-hover:scale-105"
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl bg-[#0a0a0f]">🍽️</div>
+          <div className="w-full h-full flex items-center justify-center bg-[#05050a]">
+            <Zap size={32} className="text-white/10" />
+          </div>
         )}
 
-        <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent opacity-100" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#02040a] via-transparent to-transparent opacity-90" />
         
-        {/* Match Percentage Pulse */}
+        {/* HUD Match Badge */}
         {score && (
-          <div className="absolute top-3 right-3 z-20">
-            <div className="relative">
-              <div className="absolute inset-0 bg-themeAccent-500/20 blur-xl rounded-full animate-pulse" />
-              <div className="relative premium-glass border-themeAccent-500/30 text-themeAccent-400 px-3 py-1 rounded-full font-black text-[9px] tracking-widest uppercase flex items-center gap-1">
-                <Sparkles size={10} className="animate-spin-slow" />
-                {score}% MATCH
-              </div>
+          <div className="absolute top-4 right-4 z-40">
+            <div className="premium-glass-hud border-themeAccent-500/40 px-3 py-1.5 rounded-sm flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-themeAccent-400 animate-pulse" />
+              <span className="text-hud text-themeAccent-400 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
+                Match {score}%
+              </span>
             </div>
           </div>
         )}
 
-        {/* Diet Badge */}
-        <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1.5">
-            <div className={`w-3.5 h-3.5 rounded-sm border-[1.5px] flex items-center justify-center ${isVeg ? 'border-green-500/50' : 'border-red-500/50'}`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${isVeg ? 'bg-green-500' : 'bg-red-500'} shadow-[0_0_8px_${isVeg ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)'}]`}></div>
+        {/* Tactical Diet Indicator */}
+        <div className="absolute bottom-4 left-4 z-40">
+            <div className={`px-2 py-0.5 rounded-sm border text-[9px] font-black uppercase tracking-widest ${isVeg ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
+                {isVeg ? 'VEG' : 'NON-VEG'}
             </div>
         </div>
       </div>
 
-      <div className="p-4 flex flex-col flex-grow relative z-10">
-        <div className="flex justify-between items-start mb-1.5">
-          <h3 className="text-white font-black text-[15px] tracking-tight group-hover:text-themeAccent-400 transition-colors line-clamp-1 text-glow">
+      <div className="p-5 flex flex-col flex-grow relative z-10">
+        <div className="mb-2">
+          <h3 className="text-white font-black text-lg tracking-tight group-hover:text-themeAccent-400 transition-colors line-clamp-1 uppercase text-hud">
             {food.name}
           </h3>
         </div>
 
-        <div className="flex items-center gap-3 mb-2">
-             <div className="flex items-center gap-1 text-yellow-400/90 font-black text-[10px]">
-                <Star size={10} className="fill-current" />
+        <div className="flex items-center gap-4 mb-3 border-b border-white/5 pb-3">
+             <div className="flex items-center gap-1.5 text-yellow-500 font-bold text-[11px] text-hud">
+                <Star size={12} className="fill-current" />
                 {rating}
              </div>
-             <div className="w-1 h-1 rounded-full bg-white/10" />
-             <div className="text-white/40 text-[10px] font-bold">
+             <div className="w-px h-3 bg-white/10" />
+             <div className="text-white/40 text-[10px] font-black uppercase tracking-wider text-hud">
                 {food.category || 'Specialty'}
              </div>
         </div>
 
-        <p className="text-gray-400 text-[11px] font-medium line-clamp-2 mb-6 leading-relaxed opacity-70 group-hover:opacity-100 transition-opacity">
-          {food.description || `Exclusives from ${food.restaurant?.name || 'Chef Specialty'}`}
+        <p className="text-gray-400 text-xs font-medium line-clamp-2 mb-6 leading-relaxed opacity-60 group-hover:opacity-100 transition-opacity">
+          {food.description || `Tactical precision in every bite. Prepared by ${food.restaurant?.name || 'Central Command'}.`}
         </p>
 
-        <div className="mt-auto flex items-center justify-between pt-4 border-t border-white/[0.05]">
+        <div className="mt-auto flex items-center justify-between">
           <div className="flex flex-col">
-            <span className="text-[9px] text-gray-600 font-black uppercase tracking-[0.1em]">Price</span>
-            <span className="font-black text-lg text-white tracking-tight">₹{food.price}</span>
+            <span className="text-[9px] text-themeAccent-500/60 font-black uppercase tracking-[0.2em] text-hud">Credit cost</span>
+            <span className="font-black text-xl text-white tracking-tight text-hud">₹{food.price}</span>
           </div>
           <button
             onClick={() => { trackAddToCart(userId, food); onAdd(food); }}
-            className="px-5 py-2 bg-white/[0.03] hover:bg-themeAccent-500 text-gray-400 hover:text-white font-black rounded-xl text-[10px] uppercase tracking-widest transition-all duration-300 border border-white/5 active:scale-95 shadow-lg"
+            className="px-6 py-2.5 bg-themeAccent-600/10 hover:bg-themeAccent-500 text-themeAccent-400 hover:text-black font-black rounded-sm text-[10px] uppercase tracking-[0.2em] transition-all duration-300 border border-themeAccent-500/30 active:scale-95 text-hud"
           >
-            Order
+            Initiate
           </button>
         </div>
       </div>
@@ -294,10 +194,10 @@ const FoodGridCard = ({ food, userId, onAdd }) => {
 const FilterChip = ({ label, active, onClick }) => (
   <button
     onClick={onClick}
-    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border
+    className={`px-5 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all duration-300 border text-hud
       ${active
-        ? 'bg-themeAccent-500 border-themeAccent-500 text-white shadow-lg shadow-themeAccent-500/30'
-        : 'bg-white/5 border-white/10 text-gray-400 hover:border-themeAccent-500/40 hover:text-white'
+        ? 'bg-themeAccent-500/20 border-themeAccent-500 text-themeAccent-400 shadow-[0_0_20px_rgba(6,182,212,0.2)]'
+        : 'bg-white/5 border-white/10 text-gray-500 hover:border-themeAccent-500/40 hover:text-white'
       }`}
   >
     {label}
@@ -397,21 +297,30 @@ const Recommendations = () => {
 
   if (!userId) {
     return (
-      <div className="min-h-screen bg-[#020205] flex flex-col items-center justify-center text-center px-6">
-        <div className="text-6xl mb-4">🔐</div>
-        <h2 className="text-2xl font-bold text-white mb-2">Login to see recommendations</h2>
-        <p className="text-gray-400 text-sm">Your personal food recommendations appear here after you log in.</p>
+      <div className="min-h-screen bg-[#02040a] flex flex-col items-center justify-center text-center px-6 relative overflow-hidden">
+        <StarField />
+        <div className="relative z-10 bg-[#0a0a14]/60 backdrop-blur-3xl p-12 rounded-2xl border border-white/10 max-w-md w-full">
+          <div className="bg-themeAccent-500/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 border border-themeAccent-500/30 shadow-[0_0_30px_rgba(6,182,212,0.2)]">
+            <ShieldCheck size={40} className="text-themeAccent-400" />
+          </div>
+          <h2 className="text-2xl font-black text-white mb-4 uppercase tracking-tighter text-hud">Authentication Required</h2>
+          <p className="text-gray-400 text-sm font-medium mb-8 leading-relaxed">
+            AI-driven results are locked to authorized personnel. Please initiate login sequence to view your personalized food recommendations.
+          </p>
+          <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+            <div className="h-full bg-themeAccent-500 w-1/3 animate-[stars-scroll_2s_ease-in-out_infinite]" />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="theme-ocean min-h-screen bg-[#020617] pb-24 relative overflow-hidden">
+    <div className="min-h-screen bg-[#02040a] pb-32 relative overflow-hidden">
       <style>{SPACE_CSS}</style>
       
       {/* Visual Backdrop */}
       <StarField />
-      <UFOAssistant userId={userId} />
 
       {/* Scanning Light Effect */}
       <div className="fixed inset-0 pointer-events-none z-10 overflow-hidden">
@@ -422,11 +331,14 @@ const Recommendations = () => {
       {/* Page Header - Thinned Down */}
       <div className="px-4 md:px-8 pt-8 pb-3 relative">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-          <div>
-            <div className="flex items-center gap-2 mb-1.5 text-themeAccent-500 font-black tracking-tighter text-[9px] uppercase opacity-70">
-              <Zap size={12} className="fill-themeAccent-500" /> Engine Active
+          <div className="relative group">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-themeAccent-500 animate-pulse" />
+              <span className="text-themeAccent-500 font-black tracking-[0.3em] text-[10px] uppercase text-hud opacity-80">
+                Strategic Intelligence Linked
+              </span>
             </div>
-            <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter">
+            <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase text-hud">
               {strategyLabel.split(' ').slice(1).join(' ')}
             </h1>
           </div>
@@ -455,12 +367,12 @@ const Recommendations = () => {
               </select>
             </div>
             
-            <div className="w-full md:w-auto flex gap-1.5 overflow-x-auto hide-scrollbar pt-2 md:pt-0">
+            <div className="w-full md:w-auto flex gap-2 overflow-x-auto hide-scrollbar pt-2 md:pt-0">
               {['breakfast', 'lunch', 'dinner', 'snack'].map(type => (
                 <button
                   key={type}
                   onClick={() => setMealFilter(p => p === type ? 'all' : type)}
-                  className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase transition-all border ${mealFilter === type ? 'bg-themeAccent-500 border-themeAccent-500 text-white shadow-[0_0_10px_rgba(6,182,212,0.4)]' : 'bg-white/5 border-white/5 text-gray-400'}`}
+                  className={`px-4 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all border text-hud ${mealFilter === type ? 'bg-themeAccent-500/20 border-themeAccent-500 text-themeAccent-400 shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'bg-white/5 border-white/5 text-gray-500'}`}
                 >
                   {type}
                 </button>
@@ -471,12 +383,11 @@ const Recommendations = () => {
 
         {/* AI Explainer - Thinned */}
         {explanation && (
-          <div className="mt-6 relative group max-w-3xl">
-            <div className="relative premium-glass border-themeAccent-500/10 p-4 rounded-xl flex items-center gap-3 overflow-hidden">
-              <div className="bg-themeAccent-500/10 p-2 rounded-lg text-themeAccent-400 shrink-0">
-                <Info size={18} />
-              </div>
-              <p className="text-gray-300 text-xs md:text-sm italic leading-relaxed font-medium">
+          <div className="mt-8 relative group max-w-4xl">
+            <div className="absolute -inset-1 bg-gradient-to-r from-themeAccent-500/20 to-transparent blur-md opacity-50" />
+            <div className="relative premium-glass-hud border-themeAccent-500/20 p-5 rounded-sm flex items-center gap-4 overflow-hidden">
+               <div className="w-1 h-12 bg-themeAccent-500/40" />
+              <p className="text-gray-300 text-xs md:text-sm font-bold leading-relaxed tracking-wide text-hud italic">
                 "{explanation}"
               </p>
             </div>
@@ -518,28 +429,31 @@ const Recommendations = () => {
 
         {/* No results after filter */}
         {!loading && filtered.length === 0 && (
-          <div className="py-24 text-center">
-            <div className="text-5xl mb-4">🔍</div>
-            <p className="text-gray-400 text-base">No foods match your current filters.</p>
+          <div className="py-32 text-center relative z-10">
+            <div className="bg-themeAccent-500/5 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/5">
+                <Bot size={40} className="text-white/20" />
+            </div>
+            <p className="text-white/40 text-lg font-black uppercase tracking-widest text-hud">System Zero Match</p>
+            <p className="text-gray-500 text-sm font-medium mt-2">Adjust tactical filters to recalibrate recommendation stream.</p>
             <button
               onClick={() => { setVegFilter('all'); setMealFilter('all'); }}
-              className="mt-4 text-themeAccent-400 text-sm underline hover:text-orange-300"
+              className="mt-8 text-themeAccent-400 text-[10px] font-black uppercase tracking-[0.3em] hover:text-white transition-colors text-hud"
             >
-              Clear filters
+              Recalibrate Settings
             </button>
           </div>
         )}
 
         {/* Load More */}
         {!loading && hasMore && (
-          <div className="text-center mt-8">
+          <div className="text-center mt-16">
             <button
               onClick={handleLoadMore}
-              className="bg-themeAccent-500/10 hover:bg-white text-themeAccent-400 hover:text-black
-                         border border-themeAccent-500/50 hover:border-white
-                         px-8 py-3 rounded-xl font-bold transition-all duration-300 uppercase tracking-widest text-[11px]"
+              className="bg-themeAccent-600/10 hover:bg-themeAccent-500 text-themeAccent-400 hover:text-black
+                         border border-themeAccent-500/40 hover:border-white
+                         px-12 py-4 rounded-sm font-black transition-all duration-500 uppercase tracking-[0.4em] text-[10px] shadow-2xl text-hud"
             >
-              Load More Recommendations
+              Expand Stream Depth
             </button>
           </div>
         )}
