@@ -13,14 +13,14 @@ const NAV_CSS = `
     100% { background-position: 0% 50%; }
   }
   @keyframes shimmer-line {
-    0% { transform: translateX(-200%) skewX(-25deg); opacity: 0; }
-    30% { opacity: 0.6; }
-    70% { opacity: 0.6; }
+    0%   { transform: translateX(-200%) skewX(-25deg); opacity: 0; }
+    30%  { opacity: 0.6; }
+    70%  { opacity: 0.6; }
     100% { transform: translateX(200%) skewX(-25deg); opacity: 0; }
   }
-  @keyframes nav-pulse {
-    0%, 100% { opacity: 0.5; }
-    50% { opacity: 1; }
+  @keyframes nav-dot-pulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50%       { opacity: 1;   transform: scale(1.4); }
   }
   .nav-gradient-border {
     background-size: 200% 200%;
@@ -30,13 +30,25 @@ const NAV_CSS = `
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    animation: shimmer-line 5s ease-in-out infinite 1s;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+    animation: shimmer-line 6s ease-in-out infinite 1s;
     border-radius: inherit;
     pointer-events: none;
   }
-  .space-dot {
-    animation: nav-pulse 2s ease-in-out infinite;
+  .space-inner-bg {
+    background-color: #06061a;
+    background-image:
+      radial-gradient(circle at 15% 50%, rgba(34,211,238,0.06) 0%, transparent 40%),
+      radial-gradient(circle at 85% 50%, rgba(99,102,241,0.06) 0%, transparent 40%);
+  }
+  .space-bottom-glow {
+    position: absolute;
+    bottom: 0; left: 10%; right: 10%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(34,211,238,0.6), rgba(99,102,241,0.6), transparent);
+    filter: blur(1px);
+  }
+  .nav-dot {
+    animation: nav-dot-pulse 2s ease-in-out infinite;
   }
 `;
 
@@ -59,28 +71,27 @@ const Navbar = ({ toggleSidebar }) => {
     ];
 
     return (
-        <nav className="sticky top-0 z-50 transition-all duration-500 rounded-b-[1.5rem] shadow-lg">
+        <nav className="sticky top-0 z-50 transition-all duration-500 rounded-b-[1.5rem]">
             <style>{NAV_CSS}</style>
 
             {/* === BORDER LAYER === */}
-            <div className={`absolute inset-0 rounded-b-[1.5rem] p-[1.5px] nav-gradient-border nav-shimmer overflow-hidden
+            <div className={`absolute inset-0 rounded-b-[1.5rem] p-[1.5px] nav-gradient-border nav-shimmer overflow-hidden shadow-lg
                 ${isSpaceTheme
-                    ? 'bg-gradient-to-r from-cyan-500 via-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20'
-                    : 'bg-gradient-to-r from-orange-400 via-pink-500 to-purple-500 shadow-xl shadow-purple-500/20'
+                    ? 'bg-gradient-to-r from-cyan-500 via-indigo-500 to-purple-600 shadow-indigo-500/30'
+                    : 'bg-gradient-to-r from-orange-400 via-pink-500 to-purple-500 shadow-purple-500/20'
                 }`}
             >
                 {/* Inner bg */}
                 <div className={`h-full w-full rounded-b-[calc(1.5rem-1.5px)] transition-colors duration-500
-                    ${isSpaceTheme
-                        ? 'bg-[#06061a]/95 backdrop-blur-2xl'
-                        : 'bg-white'
-                    }`}
+                    ${isSpaceTheme ? 'space-inner-bg backdrop-blur-2xl' : 'bg-white'}`}
                 />
+                {/* AI Picks bottom glow */}
+                {isSpaceTheme && <div className="space-bottom-glow" />}
             </div>
 
-            {/* Space theme: subtle top-glow line */}
+            {/* AI Picks: subtle top highlight */}
             {isSpaceTheme && (
-                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent z-20 pointer-events-none" />
+                <div className="absolute top-0 left-[20%] right-[20%] h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent z-20 pointer-events-none" />
             )}
 
             <div className="max-w-[1600px] mx-auto px-6 w-full relative z-10">
@@ -109,7 +120,7 @@ const Navbar = ({ toggleSidebar }) => {
                                 </span>
                                 {isSpaceTheme && (
                                     <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-cyan-400/70 flex items-center gap-1">
-                                        <span className="w-1 h-1 bg-cyan-400 rounded-full space-dot" />
+                                        <span className="w-1 h-1 bg-cyan-400 rounded-full nav-dot" />
                                         AI Mode
                                     </span>
                                 )}
