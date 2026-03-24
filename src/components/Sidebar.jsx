@@ -50,7 +50,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
     const handleLogout = async () => {
         try { await logout(); navigate('/'); }
-        catch (error) { console.error('Logout failed', error); }
+        catch (error) { console.error('Logout failed', error); navigate('/'); }
     };
 
     return (
@@ -228,24 +228,13 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
                     {/* ── FOOTER ── */}
                     <div className={`p-4 shrink-0 border-t transition-colors duration-500 ${isSpaceTheme ? 'border-white/10' : 'border-gray-100'}`}>
-                        {/* Premium card */}
-                        <div className="relative mb-3 overflow-hidden rounded-2xl">
-                            <div className={`absolute inset-0 p-[1.5px] rounded-2xl ${isSpaceTheme ? 'bg-gradient-to-br from-cyan-600 via-indigo-500 to-purple-600' : 'bg-gradient-to-br from-orange-400 via-pink-500 to-purple-500'}`}>
-                                <div className={`h-full w-full rounded-[calc(1rem-1.5px)] ${isSpaceTheme ? 'bg-[#06060f]' : 'bg-gradient-to-br from-gray-900 to-gray-800'}`} />
-                            </div>
-                            <div className="relative p-4">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                                    <p className="text-sm font-bold text-white">Premium Member</p>
-                                </div>
-                                <p className="text-[10px] text-white/45 font-medium">Free delivery · Priority support</p>
-                            </div>
-                        </div>
-
                         {/* Logout btn */}
                         <button
                             onClick={handleLogout}
-                            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl w-full transition-all text-xs font-bold group ${isSpaceTheme ? 'text-white/30 hover:text-red-400 hover:bg-white/5' : 'text-gray-500 hover:text-red-600 hover:bg-red-50'}`}
+                            className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl w-full transition-all text-sm font-bold group
+                                ${isSpaceTheme
+                                    ? 'text-white/40 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20'
+                                    : 'text-gray-500 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100'}`}
                         >
                             <LogOut className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" strokeWidth={1.5} />
                             Log Out
