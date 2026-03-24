@@ -1,3 +1,5 @@
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Home, Compass, Heart, ShoppingBag, Clock, Settings, Zap, X, LogOut, MapPin, Sparkles, User, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';

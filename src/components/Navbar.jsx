@@ -1,3 +1,5 @@
+import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { ShoppingBag, Search, Menu, User, Heart, Zap, ShieldCheck, Activity } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useShop } from '../context/ShopContext';
