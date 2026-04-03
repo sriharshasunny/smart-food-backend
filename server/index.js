@@ -300,6 +300,48 @@ app.get('/api/debug-last-order', async (req, res) => {
     }
 });
 
+// DEBUG ROUTE: Test SMTP Connection live on Render
+app.get('/api/debug-smtp', async (req, res) => {
+    try {
+        const nodemailer = require('nodemailer');
+        
+        const user = process.env.SMTP_USER || process.env.EMAIL_USER;
+        const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+
+        if (!user || !pass) {
+            return res.json({ 
+                status: 'ERROR', 
+                message: 'SMTP variables are missing from Render Dashboard',
+                vars_found: { has_user: !!user, has_pass: !!pass }
+            });
+        }
+
+        const transporter = nodemailer.createTransport({
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true,
+            auth: { user, pass }
+        });
+
+        // Test configuration
+        await transporter.verify();
+
+        res.json({
+            status: 'SUCCESS',
+            message: 'Nodemailer connected to Gmail successfully!',
+            user: user
+        });
+    } catch (error) {
+        res.json({
+            status: 'FAILED',
+            message: 'Nodemailer connection failed. Double check your App Password spaces!',
+            errorName: error.name,
+            errorCode: error.code,
+            errorMessage: error.message
+        });
+    }
+});
+
 // 1. Send OTP
 app.post('/api/auth/send-otp', async (req, res) => {
     try {
