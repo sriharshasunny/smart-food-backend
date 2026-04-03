@@ -123,170 +123,43 @@
             const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
             const url = URL.createObjectURL(svgBlob);
 
-            img.onload = function () {
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
-                ctx.drawImage(img, 0, 0);
-                URL.revokeObjectURL(url);
-
-                const a = document.createElement("a");
-                a.download = filename + "_high_res.png";
-                a.href = canvas.toDataURL("image/png", 1.0);
-                a.click();
-            };
-            img.src = url;
-        }
-    </script>
-</head>
-
-<body>
-
-    <h1>Horizontal Dissertation Diagrams</h1>
-    <p style="text-align:center; color:#64748b; margin-top:-30px; margin-bottom:50px;">Optimized for Word Document Width fitting (Left-to-Right layout).</p>
-
-    <!-- 1. System Architecture -->
-    <div class="diagram-container">
-        <h2>1. System Architecture <button class="download-btn"
-                onclick="downloadImage('diagram-1', 'Fig_4_1_System_Architecture_Hz')">Download PNG</button></h2>
-        <div id="diagram-1" class="mermaid">
-            graph LR
-            classDef frontend fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0f172a,rx:8,ry:8
-            classDef backend fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a,rx:8,ry:8
-            classDef db fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a,rx:8,ry:8
-            classDef external fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#0f172a,rx:8,ry:8
-
-            subgraph Client ["Client Browser (React 19 + Vite)"]
-            direction LR
-            UI["UI Components"]:::frontend
-            Theme["Global State"]:::frontend
-            UI --- Theme
-            end
-            style Client fill:#ffffff,stroke:#cbd5e1,stroke-width:2px,stroke-dasharray: 5 5
-
-            subgraph Server ["Node.js + Express Backend"]
-            direction TB
-            API["REST APIs (/api/*)"]:::backend
-            Auth["Auth Service"]:::backend
-            RecEngine["Rec Pipeline"]:::backend
-            ChatBot["Chatbot Engine"]:::backend
-            Payment["Payment Controller"]:::backend
-
-            API --> Auth
-            API --> RecEngine
-            API --> ChatBot
-            API --> Payment
-            end
-            style Server fill:#ffffff,stroke:#cbd5e1,stroke-width:2px,stroke-dasharray: 5 5
-
-            UI -->|"HTTP/REST"| API
-
-            subgraph Services ["Cloud & External Services"]
-            direction TB
-            DB[("Supabase DB")]:::db
-            Gemini{"Gemini AI"}:::external
-            Dodo["Dodo Payments"]:::external
-            NodeMailer[/"Nodemailer"/]:::external
-            end
-            style Services fill:#ffffff,stroke:#cbd5e1,stroke-width:2px,stroke-dasharray: 5 5
-
-            Auth -->|"Send OTP"| NodeMailer
-            Auth -->|"Verify User"| DB
-            RecEngine -->|"Fetch/Upsert"| DB
-            ChatBot -->|"Prompt"| Gemini
-            ChatBot -->|"Query logic"| DB
-            Payment -->|"Checkout Session"| Dodo
-            Payment -->|"Save Order"| DB
-        </div>
-    </div>
-
     <!-- 2. Class Diagram -->
     <div class="diagram-container">
         <h2>2. Class Diagram <button class="download-btn"
-                onclick="downloadImage('diagram-2', 'Fig_4_2_Class_Diagram_Hz')">Download PNG</button></h2>
+                onclick="downloadImage('diagram-2', 'Fig_4_2_Class_Diagram_Compressed')">Download PNG</button></h2>
         <div id="diagram-2" class="mermaid">
-            classDiagram
+            graph LR
+            classDef classNode fill:#ffffff,stroke:#0f172a,stroke-width:2px,color:#0f172a,rx:4,ry:4,text-align:left
+
+            subgraph Core Architecture
             direction LR
+            
+            U["<div style='background:#e0f2fe; padding:8px; border-bottom:2px solid #0f172a; text-align:center; font-weight:bold;'>User</div><div style='padding:8px; font-size:12px; text-align:left;'>id: UUID<br/>name: String<br/>email: String<br/>auth_provider: String<br/>created_at: Date</div>"]:::classNode
+            
+            O["<div style='background:#fef3c7; padding:8px; border-bottom:2px solid #0f172a; text-align:center; font-weight:bold;'>Order</div><div style='padding:8px; font-size:12px; text-align:left;'>id: UUID<br/>user_id: UUID<br/>total_amount: Float<br/>payment_status: String<br/>order_status: String</div>"]:::classNode
+            
+            OI["<div style='background:#fef3c7; padding:8px; border-bottom:2px solid #0f172a; text-align:center; font-weight:bold;'>OrderItem</div><div style='padding:8px; font-size:12px; text-align:left;'>id: UUID<br/>order_id: UUID<br/>food_id: UUID<br/>name: String<br/>price: Float<br/>qty: Integer</div>"]:::classNode
+            
+            F["<div style='background:#dcfce7; padding:8px; border-bottom:2px solid #0f172a; text-align:center; font-weight:bold;'>FoodItem</div><div style='padding:8px; font-size:12px; text-align:left;'>id: UUID<br/>restaurant_id: UUID<br/>name: String<br/>category: String<br/>price: Float<br/>is_veg: Boolean</div>"]:::classNode
+            
+            R["<div style='background:#e0f2fe; padding:8px; border-bottom:2px solid #0f172a; text-align:center; font-weight:bold;'>Restaurant</div><div style='padding:8px; font-size:12px; text-align:left;'>id: UUID<br/>name: String<br/>city: String<br/>cuisines: Array<br/>is_active: Boolean</div>"]:::classNode
+            
+            UP["<div style='background:#f3e8ff; padding:8px; border-bottom:2px solid #0f172a; text-align:center; font-weight:bold;'>UserPreferences</div><div style='padding:8px; font-size:12px; text-align:left;'>category_scores: JSON<br/>veg_score: Float</div>"]:::classNode
+            
+            CH["<div style='background:#fce7f3; padding:8px; border-bottom:2px solid #0f172a; text-align:center; font-weight:bold;'>ChatHistory</div><div style='padding:8px; font-size:12px; text-align:left;'>role: String<br/>content: String<br/>created_at: Date</div>"]:::classNode
+            
+            UA["<div style='background:#f3e8ff; padding:8px; border-bottom:2px solid #0f172a; text-align:center; font-weight:bold;'>UserActivity</div><div style='padding:8px; font-size:12px; text-align:left;'>action_type: String<br/>weight: Integer<br/>created_at: Date</div>"]:::classNode
 
-            class User {
-            +UUID id
-            +String name
-            +String email
-            +String password
-            +String auth_provider
-            +Date created_at
-            }
-            style User fill:#e0f2fe,stroke:#0284c7,stroke-width:2px
-
-            class Restaurant {
-            +UUID id
-            +String name
-            +String city
-            +Array cuisines
-            +Float rating
-            +Boolean is_active
-            }
-            style Restaurant fill:#e0f2fe,stroke:#0284c7,stroke-width:2px
-
-            class FoodItem {
-            +UUID id
-            +UUID restaurant_id
-            +String name
-            +String description
-            +Float price
-            +String category
-            +Boolean is_veg
-            +Boolean available
-            }
-            style FoodItem fill:#dcfce7,stroke:#16a34a,stroke-width:2px
-
-            class Order {
-            +UUID id
-            +UUID user_id
-            +Float total_amount
-            +String payment_status
-            +String order_status
-            +Date created_at
-            }
-            style Order fill:#fef3c7,stroke:#d97706,stroke-width:2px
-
-            class OrderItem {
-            +UUID id
-            +UUID order_id
-            +UUID food_id
-            +String name
-            +Float price
-            +Integer quantity
-            }
-            style OrderItem fill:#fef3c7,stroke:#d97706,stroke-width:2px
-
-            class UserPreferences {
-            +JSONB category_scores
-            +Float veg_score
-            }
-            style UserPreferences fill:#f3e8ff,stroke:#9333ea,stroke-width:2px
-
-            class UserActivity {
-            +String action_type
-            +Integer weight
-            +Date created_at
-            }
-            style UserActivity fill:#f3e8ff,stroke:#9333ea,stroke-width:2px
-
-            class ChatHistory {
-            +String role
-            +String content
-            +Date created_at
-            }
-            style ChatHistory fill:#fce7f3,stroke:#db2777,stroke-width:2px
-
-            User "1" -- "*" Order : places
-            User "1" -- "1" UserPreferences : has
-            User "1" -- "*" UserActivity : generates
-            User "1" -- "*" ChatHistory : sends
-            Restaurant "1" -- "*" FoodItem : offers
-            Order "1" -- "*" OrderItem : contains
-            OrderItem "*" -- "1" FoodItem : ref
-            UserActivity "*" -- "1" FoodItem : targets
+            U -->|"1..* places"| O
+            O -->|"1..* contains"| OI
+            OI -->|"*..1 references"| F
+            R -->|"1..* offers"| F
+            U -->|"1..1 has"| UP
+            U -->|"1..* generates"| UA
+            U -->|"1..* sends"| CH
+            UA -->|"*..1 targets"| F
+            
+            end
         </div>
     </div>
 
