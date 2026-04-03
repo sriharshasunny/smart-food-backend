@@ -1,15 +1,11 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-// Initialize Nodemailer transporter
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: 465,
-    secure: true, // true for 465, false for other ports
-    auth: {
-        user: process.env.SMTP_USER || process.env.EMAIL_USER,
-        pass: process.env.SMTP_PASS || process.env.EMAIL_PASS
-    }
-});
+// Initialize Resend with API Key from environment variables
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Define the "From" email address. Resend's free tier requires 'onboarding@resend.dev'
+// or a custom domain verified in the Resend dashboard.
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'SmartFood Delivery <onboarding@resend.dev>';
 
 /**
  * Send OTP Email
@@ -18,9 +14,9 @@ const transporter = nodemailer.createTransport({
  */
 exports.sendOTP = async (email, otp) => {
     try {
-        const info = await transporter.sendMail({
-            from: `"SmartFood Delivery" <${process.env.SMTP_USER || process.env.EMAIL_USER}>`,
-            to: email,
+        const { data, error } = await resend.emails.send({
+            from: FROM_EMAIL,
+            to: email, // Note: On free Resend tier, you can only send to the email address registered with your Resend account.
             subject: 'Your Login Code',
             html: `
             <div style="font-family: sans-serif; text-align: center; color: #333;">
@@ -33,10 +29,15 @@ exports.sendOTP = async (email, otp) => {
         `
         });
 
-        console.log(`[EmailService] OTP sent to ${email}. ID: ${info.messageId}`);
-        return info;
+        if (error) {
+            console.error("[EmailService] Resend API Error:", error);
+            throw new Error(error.message);
+        }
+
+        console.log(`[EmailService] OTP sent via Resend to ${email}. ID: ${data.id}`);
+        return data;
     } catch (error) {
-        console.error("Failed to send OTP:", error);
+        console.error("Failed to send OTP via Resend:", error);
         throw error;
     }
 };
@@ -47,14 +48,15 @@ exports.sendOTP = async (email, otp) => {
  * @param {object} order - Order object
  */
 exports.sendOrderConfirmation = async (email, order) => {
-    console.log(`[EmailService] Preparing to send order confirmation to ${email}`);
+    console.log(`[EmailService] Preparing to send order confirmation via Resend to ${email}`);
 
-    // Fallback if order items are missing or structure is different
+    // Extract relevant data safely
     const items = order.items || [];
     const orderId = order._id || order.id || 'N/A';
     const total = order.totalAmount || order.total_amount || 0;
     const link = order.invoiceLink || '#';
 
+    // Build items HTML list
     const itemListHtml = items.map(i => `
         <tr style="border-bottom: 1px solid #eee;">
             <td style="padding: 10px; color: #333;">${i.name}</td>
@@ -64,8 +66,8 @@ exports.sendOrderConfirmation = async (email, order) => {
     `).join('');
 
     try {
-        const info = await transporter.sendMail({
-            from: `"SmartFood Orders" <${process.env.SMTP_USER || process.env.EMAIL_USER}>`,
+        const { data, error } = await resend.emails.send({
+            from: FROM_EMAIL,
             to: email,
             subject: `Order Confirmed! #${orderId.toString().slice(-6)}`,
             html: `
@@ -110,11 +112,16 @@ exports.sendOrderConfirmation = async (email, order) => {
             `
         });
 
-        console.log(`[EmailService] Order Email sent to ${email}. ID: ${info.messageId}`);
-        return info;
+        if (error) {
+            console.error("[EmailService] Resend API Error:", error);
+            throw new Error(error.message);
+        }
+
+        console.log(`[EmailService] Order Email sent via Resend to ${email}. ID: ${data.id}`);
+        return data;
 
     } catch (error) {
-        console.error("Failed to send order email:", error);
+        console.error("Failed to send order email via Resend:", error);
         return null;
     }
 };

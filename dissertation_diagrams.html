@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Food Delivery - Professional Architecture Diagrams</title>
+    <!-- Include Mermaid JS -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f1f5f9;
+            color: #1e293b;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #0f172a;
+            font-size: 2.5rem;
+            margin-bottom: 50px;
+            font-weight: 800;
+        }
+
+        .diagram-container {
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 50px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+        }
+
+        h2 {
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-top: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.5rem;
+            color: #334155;
+            font-weight: 700;
+        }
+
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+            overflow-x: auto;
+        }
+
+        button.download-btn {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+        }
+
+        button.download-btn:hover {
+            background-color: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 8px -1px rgba(37, 99, 235, 0.3);
+        }
+    </style>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                fontFamily: 'Inter, Segoe UI, Tahoma, sans-serif',
+                primaryColor: '#e0f2fe',
+                primaryBorderColor: '#0284c7',
+                primaryTextColor: '#0f172a',
+                lineColor: '#64748b',
+                secondaryColor: '#f1f5f9',
+                tertiaryColor: '#ffffff'
+            },
+            flowchart: {
+                curve: 'basis' /* Smooth curved lines */
+            }
+        });
+
+        function downloadImage(wrapperId, filename) {
+            const wrapper = document.getElementById(wrapperId);
+            const svg = wrapper.querySelector('svg');
+
+            if (!svg) {
+                alert("Diagram is still loading...");
+                return;
+            }
+
+            const clonedSvg = svg.cloneNode(true);
+            const style = document.createElement('style');
+            style.textContent = `
+                * { font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important; }
+            `;
+            clonedSvg.insertBefore(style, clonedSvg.firstChild);
+
+            const svgData = new XMLSerializer().serializeToString(clonedSvg);
+            const canvas = document.createElement("canvas");
+            const svgSize = svg.getBoundingClientRect();
+
+            // Ultra high-res scale for extreme professional crispness (Scale: 5x)
+            const scale = 5;
+            canvas.width = svgSize.width * scale;
+            canvas.height = svgSize.height * scale;
+
+            const ctx = canvas.getContext("2d");
+            ctx.scale(scale, scale);
+
+            // Fill with pure white background
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const img = new Image();
+            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(svgBlob);
+
+            img.onload = function () {
+                // High quality rendering
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, 0, 0);
+                URL.revokeObjectURL(url);
+
+                const a = document.createElement("a");
+                a.download = filename + "_high_res.png";
+                a.href = canvas.toDataURL("image/png", 1.0);
+                a.click();
+            };
+            img.src = url;
+        }
+    </script>
+</head>
+
+<body>
+
+    <h1>Smart Food Delivery Diagrams</h1>
+
+    <!-- 1. System Architecture -->
+    <div class="diagram-container">
+        <h2>1. System Architecture <button class="download-btn"
+                onclick="downloadImage('diagram-1', 'Fig_4_1_System_Architecture')">Download PNG</button></h2>
+        <div id="diagram-1" class="mermaid">
+            graph TD
+            classDef frontend fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0f172a,rx:8,ry:8
+            classDef backend fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a,rx:8,ry:8
+            classDef db fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a,rx:8,ry:8
+            classDef external fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#0f172a,rx:8,ry:8
+
+            subgraph Client ["Client Browser (React 19 + Vite)"]
+            UI["UI Components & Layouts"]:::frontend
+            Theme["Global State (Context API)"]:::frontend
+            end
+            style Client fill:#ffffff,stroke:#cbd5e1,stroke-width:2px,stroke-dasharray: 5 5
+
+            subgraph Server ["Node.js + Express Backend"]
+            API["REST APIs (/api/*)"]:::backend
+            Auth["Authentication Service"]:::backend
+            RecEngine["Recommendation Pipeline"]:::backend
+            ChatBot["AI Chatbot Controller"]:::backend
+            Payment["Payment Controller"]:::backend
+
+            API --> Auth
+            API --> RecEngine
+            API --> ChatBot
+            API --> Payment
+            end
+            style Server fill:#ffffff,stroke:#cbd5e1,stroke-width:2px,stroke-dasharray: 5 5
+
+            UI -->|"HTTP/REST"| API
+
+            subgraph Services ["Cloud & External Services"]
+            DB[("Supabase PostgreSQL")]:::db
+            Gemini{"Google Gemini AI"}:::external
+            Dodo["Dodo Payments Hub"]:::external
+            NodeMailer[/"Nodemailer SMTP"/]:::external
+            end
+            style Services fill:#ffffff,stroke:#cbd5e1,stroke-width:2px,stroke-dasharray: 5 5
+
+            Auth -->|"Send OTP"| NodeMailer
+            Auth -->|"Verify User"| DB
+            RecEngine -->|"Fetch/Upsert"| DB
+            ChatBot -->|"Prompt"| Gemini
+            ChatBot -->|"Query logic"| DB
+            Payment -->|"Checkout Session"| Dodo
+            Payment -->|"Save Order"| DB
+        </div>
+    </div>
+
+    <!-- 2. Class Diagram -->
+    <div class="diagram-container">
+        <h2>2. Class Diagram <button class="download-btn"
+                onclick="downloadImage('diagram-2', 'Fig_4_2_Class_Diagram')">Download PNG</button></h2>
+        <div id="diagram-2" class="mermaid">
+            classDiagram
+            direction TB
+
+            class User {
+            +UUID id
+            +String name
+            +String email
+            +String password
+            +String auth_provider
+            +Date created_at
+            +register()
+            +login()
+            +resetPassword()
+            }
+            style User fill:#e0f2fe,stroke:#0284c7,stroke-width:2px
+
+            class Restaurant {
+            +UUID id
+            +String name
+            +String city
+            +Array cuisines
+            +Float rating
+            +Boolean is_active
+            +UUID owner_id
+            +Date created_at
+            +getMenu()
+            +manageOrders()
+            }
+            style Restaurant fill:#e0f2fe,stroke:#0284c7,stroke-width:2px
+
+            class FoodItem {
+            +UUID id
+            +UUID restaurant_id
+            +String name
+            +String description
+            +Float price
+            +String category
+            +Boolean is_veg
+            +Float rating
+            +Boolean available
+            +String image
+            +Date created_at
+            }
+            style FoodItem fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+
+            class Order {
+            +UUID id
+            +UUID user_id
+            +JSONB guest_info
+            +Float total_amount
+            +String currency
+            +String payment_id
+            +String payment_link
+            +String payment_status
+            +String order_status
+            +Date created_at
+            +checkout()
+            }
+            style Order fill:#fef3c7,stroke:#d97706,stroke-width:2px
+
+            class OrderItem {
+            +UUID id
+            +UUID order_id
+            +UUID food_id
+            +UUID restaurant_id
+            +String name
+            +Float price
+            +Integer quantity
+            +String preparation_status
+            }
+            style OrderItem fill:#fef3c7,stroke:#d97706,stroke-width:2px
+
+            class UserPreferences {
+            +UUID user_id
+            +JSONB category_scores
+            +Float veg_score
+            +Date updated_at
+            +calculateProfile()
+            }
+            style UserPreferences fill:#f3e8ff,stroke:#9333ea,stroke-width:2px
+
+            class UserActivity {
+            +UUID id
+            +UUID user_id
+            +UUID food_id
+            +String action_type
+            +Integer weight
+            +JSONB meta
+            +Date created_at
+            +logAction()
+            }
+            style UserActivity fill:#f3e8ff,stroke:#9333ea,stroke-width:2px
+
+            class ChatHistory {
+            +UUID id
+            +UUID user_id
+            +String role
+            +String content
+            +Date created_at
+            }
+            style ChatHistory fill:#fce7f3,stroke:#db2777,stroke-width:2px
+
+            User "1" -- "*" Order : places
+            User "1" -- "1" UserPreferences : has
+            User "1" -- "*" UserActivity : generates
+            User "1" -- "*" ChatHistory : sends/receives
+            Restaurant "1" -- "*" FoodItem : offers
+            Order "1" -- "*" OrderItem : contains
+            OrderItem "*" -- "1" FoodItem : references
+            UserActivity "*" -- "1" FoodItem : targets
+        </div>
+    </div>
+
+    <!-- 3. Use Case Diagram -->
+    <div class="diagram-container">
+        <h2>3. Use Case Diagram <button class="download-btn"
+                onclick="downloadImage('diagram-3', 'Fig_4_3_Use_Case_Diagram')">Download PNG</button></h2>
+        <div id="diagram-3" class="mermaid">
+            flowchart LR
+            classDef actor fill:#f8fafc,stroke:#475569,stroke-width:2px,color:#0f172a,shape:circle
+            classDef usecase fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0f172a,rx:20,ry:20
+
+            Customer((Customer)):::actor
+            Restaurant((Restaurant Partner)):::actor
+            Admin((Platform Admin)):::actor
+
+            subgraph System ["Smart Food Delivery Platform"]
+            Login([Login & OTP Verification]):::usecase
+            Browse([Browse & Filter Menu]):::usecase
+            Chat([Query Natural Language Chatbot]):::usecase
+            Checkout([Checkout & Pay via Dodo]):::usecase
+            ManageMenu([Manage Active Menu Items]):::usecase
+            LiveOrders([Track Live Order Status]):::usecase
+            end
+            style System fill:#ffffff,stroke:#cbd5e1,stroke-width:2px,stroke-dasharray: 5 5
+
+            Customer -->|"Auth"| Login
+            Customer -->|"Discovery"| Browse
+            Customer -->|"AI Assisant"| Chat
+            Customer -->|"Purchase"| Checkout
+
+            Restaurant -->|"Auth"| Login
+            Restaurant -->|"Portal"| ManageMenu
+            Restaurant -->|"Portal"| LiveOrders
+
+            Admin -.->|"Oversee"| System
+        </div>
+    </div>
+
+    <!-- 4. Activity Diagram -->
+    <div class="diagram-container">
+        <h2>4. Activity Diagram <button class="download-btn"
+                onclick="downloadImage('diagram-4', 'Fig_4_4_Activity_Diagram')">Download PNG</button></h2>
+        <div id="diagram-4" class="mermaid">
+            flowchart TD
+            classDef startend fill:#0f172a,stroke:#0f172a,color:#fff,shape:rect,rx:20,ry:20
+            classDef action fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0f172a
+            classDef db fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+            classDef decision fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a,shape:diamond
+
+            Start((Start Session)):::startend
+            LoginAction["Login via Email / Request OTP"]:::action
+            BrowseAction["Browse Foods / Ask AI Chatbot"]:::action
+            AddToCart["Add Food Items to Cart"]:::action
+            CheckoutAction["Initiate Checkout Flow"]:::action
+
+            PaymentCheck{"Payment Complete\n(Dodo Hosted Page)?"}:::decision
+
+            SaveOrder[/"Save Order to Supabase DB"/]:::db
+            SaveItems[/"Clear Cart & Sync Order Items"/]:::db
+            SendEmail["Send Invoice via Nodemailer"]:::action
+            End((End Session)):::startend
+
+            Start --> LoginAction
+            LoginAction --> BrowseAction
+            BrowseAction --> AddToCart
+            AddToCart --> CheckoutAction
+            CheckoutAction --> PaymentCheck
+
+            PaymentCheck -->|"Yes"| SaveOrder
+            SaveOrder --> SaveItems
+            SaveItems --> SendEmail
+            SendEmail --> End
+
+            PaymentCheck -->|"No / Cancel"| CheckoutAction
+        </div>
+    </div>
+
+    <!-- 5. Sequence Diagram -->
+    <div class="diagram-container">
+        <h2>5. Sequence Diagram <button class="download-btn"
+                onclick="downloadImage('diagram-5', 'Fig_4_5_Sequence_Diagram')">Download PNG</button></h2>
+        <div id="diagram-5" class="mermaid">
+            sequenceDiagram
+            autonumber
+            actor Customer
+            participant UI as React Frontend
+            participant API as Express Backend
+            participant Rec as Rec Pipeline
+            participant DB as Supabase DB
+            participant Pay as Dodo Payments
+            participant Email as Nodemailer
+
+            note over Customer,UI: 1. Authentication Flow
+            Customer->>UI: Enter Email & Request OTP
+            UI->>API: POST /api/auth/send-otp
+            API->>Email: Send 6-digit code via SMTP
+            Customer->>UI: Submit OTP
+            UI->>API: POST /api/auth/verify-otp
+            API->>DB: Check/Create User Profile
+            API-->>UI: Return Session Token
+
+            note over Customer,DB: 2. Global Discovery & Personalization
+            UI->>API: GET /api/food/all
+            API->>DB: Fetch Active Menu Items
+            DB-->>API: Food Array
+            UI->>API: GET /api/recommendations/:userId
+            API->>Rec: Generate AI Picks
+            Rec->>DB: Fetch User Preferences
+            Rec-->>API: Top 10 Personalized Foods (70/30 Mix)
+            API-->>UI: Render Food Grids & AI Picks
+
+            Customer->>UI: Browses foods & uses Chatbot filters
+
+            note over Customer,Pay: 3. Cart & Secure Checkout
+            Customer->>UI: Adds Items to Cart
+            Customer->>UI: Clicks "Proceed to Pay"
+            UI->>API: POST /api/payment/create-payment
+            API->>Pay: client.checkoutSessions.create()
+            Pay-->>API: Returns hosted checkout_url
+            API->>DB: INSERT Pending Order & Items
+            API-->>UI: Redirect to payment page
+
+            Customer->>Pay: Completes Payment securely
+
+            note over Customer,Email: 4. Order Confirmation
+            Pay-->>UI: Redirect to /payment-success?order_id
+            UI->>API: Validate & Confirm Order status
+            API->>DB: UPDATE order_status = 'Placed'
+            API->>Email: Send HTML Invoice
+            Email-->>Customer: Receives Order Confirmation Email
+        </div>
+    </div>
+
+    <!-- 6. Recommendation Pipeline -->
+    <div class="diagram-container">
+        <h2>6. Recommendation Pipeline <button class="download-btn"
+                onclick="downloadImage('diagram-6', 'Fig_4_6_Recommendation_Pipeline')">Download PNG</button></h2>
+        <div id="diagram-6" class="mermaid">
+            flowchart TD
+            classDef engine fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#0f172a,rx:8,ry:8
+            classDef data fill:#f8fafc,stroke:#64748b,stroke-width:1px,color:#0f172a
+            classDef target fill:#dcfce7,stroke:#16a34a,stroke-width:3px,color:#0f172a,rx:8,ry:8
+
+            UserProfile[/"1. User Profile\n(Veg/Category Scores)"/]:::data
+            DBFoods[/"2. Candidate Pool\n(5000+ foods)"/]:::data
+
+            C["Candidate Engine\n(Fetches specific active foods)"]:::engine
+            B["Behavior Engine\n(Aggregates View/Click/Cart/Order weights)"]:::engine
+            R["Ranking Engine\n(Multi-factor formula: rating + match score)"]:::engine
+            S["Similarity Engine\n(Removes recents, injects alternatives)"]:::engine
+            D["Diversity Engine\n(Enforces 70% Personalized, 30% Trending mix)"]:::engine
+
+            UserProfile --> B
+            DBFoods --> C
+
+            C -->|"Raw Candidates"| R
+            B -->|"Interaction Weights"| R
+
+            R -->|"Sorted & Scored List"| S
+            S -->|"Deduplicated List"| D
+            D -->|"Algorithmic Blend"| Final[/"Final Top 10\nPersonalized Food Picks"/]:::target
+        </div>
+    </div>
+
+    <!-- 7. Chatbot Pipeline -->
+    <div class="diagram-container">
+        <h2>7. Chatbot Pipeline <button class="download-btn"
+                onclick="downloadImage('diagram-7', 'Fig_4_7_Chatbot_Pipeline')">Download PNG</button></h2>
+        <div id="diagram-7" class="mermaid">
+            flowchart TD
+            classDef ai fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0f172a,rx:8,ry:8
+            classDef logic fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a,rx:8,ry:8
+            classDef final fill:#dcfce7,stroke:#16a34a,stroke-width:3px,color:#0f172a,rx:8,ry:8
+
+            Input[/"User's Natural Language Message"/]
+            Local["Local Fast-Path Classifier\n(Regex matching)"]:::logic
+            Gemini15{"Gemini 1.5 Flash\n(Intent Detection)"}:::ai
+            Gemini25{"Gemini 2.5 Flash\n(Entity/Filter Extraction)"}:::ai
+            QueryBldr["Dynamic Query Builder\n(Supabase SDK)"]:::logic
+            DB[("Supabase PostgreSQL\n(foods, restaurants)")]
+            Response["Response Formatter\n(Injects dynamic message)"]:::logic
+            Output[/"UI Payload: Chat Message + Rendered React Cards"/]:::final
+
+            Input --> Local
+            Local -->|"Regex fail"| Gemini15
+            Gemini15 -->|"Returns Action + Prompt"| Gemini25
+            Local -->|"Direct Match"| QueryBldr
+            Gemini25 -->|"Returns JSON filters"| QueryBldr
+
+            QueryBldr -->|"Executes Search"| DB
+            DB -->|"Returns Data Rows"| Response
+            Response -->|"Final Polish"| Output
+        </div>
+    </div>
+
+</body>
+
+</html>
